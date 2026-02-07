@@ -105,6 +105,7 @@ export async function updateTodo(id: number, newTodo: Todo) {
     }
     else {
         // Server Modify
+        apiClient.put(`/todos/${id}`, newTodo);
         
     }
     
