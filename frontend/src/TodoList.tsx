@@ -3,19 +3,40 @@ import { faPlus, faPenToSquare, faTrash} from '@fortawesome/free-solid-svg-icons
 
 import { useNavigate } from 'react-router-dom';
 
+import { deleteTodoById, retrieveAllTodos } from './service/TodoService';
+
+import { useState, useEffect } from 'react';
+
+import { Todo } from './model/Todo';
+
 export default function TodoList() {
 
-    // TODO : Python으로부터 실제 데이터 받아오기
-    const todos = [
-        { id: 1, title: "Sample Todo", registDate: "2025-02-06", status: "Pending", deadline: "2025-02-10", description : "This is a sample"},
-        { id: 2, title: "Another Todo", registDate: "2025-02-06", status: "Completed", deadline: "2025-02-14", description : "This is another sample"},
-        { id: 3, title: "Yet Another Todo", registDate: "2025-02-06", status: "In Progress", deadline: "2025-02-15", description : "This is yet another sample"},
-    ];
-    
+    const [todos, setTodos] = useState<Todo[]>([]);
+
     let navigate = useNavigate();
 
     function moveFormPage(id : number = 0){
         navigate(`/todos/${id}`);
+    }
+
+    useEffect( () => {refreshTodos();}, [] );    
+
+    function refreshTodos()  { 
+        retrieveAllTodos().then( response => {
+            setTodos(response.data);
+        })
+        .catch( error => {
+            console.error("Error retrieving todos:", error);
+        });        
+    }
+
+    function deleteTodo(id: number): void {
+        // TODO Alert
+        deleteTodoById(id).then( () => {
+            refreshTodos();
+        }).catch( error => {
+            console.error("Error deleting todo:", error);
+        });
     }
 
     return(
@@ -43,7 +64,7 @@ export default function TodoList() {
                             <td>{todo.deadline}</td>
                             <td>
                                 <button className="btn btn-sm btn-outline-warning me-2" onClick={() => moveFormPage(todo.id)}><FontAwesomeIcon icon={faPenToSquare} /> Edit</button>
-                                <button className="btn btn-sm btn-outline-danger"><FontAwesomeIcon icon={faTrash} />Delete</button>
+                                <button className="btn btn-sm btn-outline-danger" onClick={() => deleteTodo(todo.id)}><FontAwesomeIcon icon={faTrash} />Delete</button>
                             </td>
                         </tr>
                     ))}   
