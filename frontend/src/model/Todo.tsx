@@ -2,7 +2,7 @@ export class Todo {
     id: number;
     title: string;
     status: string;
-    registDate: string;
+    registDate!: string;
     deadline: string;
     description : string;
 
