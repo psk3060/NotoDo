@@ -3,11 +3,11 @@ import { faPlus, faPenToSquare, faTrash} from '@fortawesome/free-solid-svg-icons
 
 import { useNavigate } from 'react-router-dom';
 
-import { deleteTodoById, retrieveAllTodos } from './service/TodoService';
+import { deleteTodoById, retrieveAllTodos } from '../../service/TodoService';
 
 import { useState, useEffect } from 'react';
 
-import { Todo } from './model/Todo';
+import { Todo } from '../../model/Todo';
 
 export default function TodoList() {
 
@@ -40,7 +40,7 @@ export default function TodoList() {
     }
 
     return(
-        <div className="container todo-list">
+        <div className="container todo-list w-75">
             <h2 className="text-center my-4">My Todo List</h2>
 
             <table className="table table-striped">
@@ -75,7 +75,6 @@ export default function TodoList() {
                 <button className="btn btn-primary" onClick={() => moveFormPage(0)}><FontAwesomeIcon icon={faPlus} />New Todo</button>
             </div>
             
-
         </div>
     );
 }
