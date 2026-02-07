@@ -3,7 +3,7 @@ import "@/styles/bootstrap.scss";
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { config } from '@fortawesome/fontawesome-svg-core'
 
-import TodoApp from "./TodoApp";
+import TodoApp from "./components/todo/TodoApp";
 
 config.autoAddCss = false
 

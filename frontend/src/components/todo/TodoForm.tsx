@@ -3,18 +3,18 @@ import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
 
 import { useNavigate } from 'react-router-dom';
 
-import {retrieveTodoById, updateTodo} from './service/TodoService';
+import {retrieveTodoById, updateTodo} from '../../service/TodoService';
 
 import { ErrorMessage, Field, Form, Formik } from "formik";
 
-import { useNumberParam } from './util/useNumberParam';
+import { useNumberParam } from '../../util/useNumberParam';
 
 import {useEffect, useState} from 'react';
-import { dateToString } from './util/useDateParam';
+import { dateToString } from '../../util/useDateParam';
 
-import { Todo } from './model/Todo';
+import { Todo } from '../../model/Todo';
 
-import { createTodo } from './service/TodoService';
+import { createTodo } from '../../service/TodoService';
 
 export default function TodoForm() {
 
