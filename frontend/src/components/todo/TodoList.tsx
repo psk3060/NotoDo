@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 
 import { Todo } from '../../model/Todo';
 
+
 export default function TodoList() {
 
     const [todos, setTodos] = useState<Todo[]>([]);
@@ -27,7 +28,7 @@ export default function TodoList() {
         })
         .catch( error => {
             console.error("Error retrieving todos:", error);
-        });        
+        });
     }
 
     function deleteTodo(id: number): void {

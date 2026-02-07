@@ -16,6 +16,8 @@ import { Todo } from '../../model/Todo';
 
 import { createTodo } from '../../service/TodoService';
 
+import moment from "moment";
+
 export default function TodoForm() {
 
   let navigate = useNavigate();
@@ -47,28 +49,42 @@ export default function TodoForm() {
             
           }
         )
-        .catch( (error) => console.log(error) );
+        .catch( (error) => console.error(error) );
+    }
+    else {
+      setRegistDate(new Date());
     }
     
   }
 
   let registDateStr = dateToString(registDate);
   
-  function validate(values: any) {
+  function validate(values: TodoFormValues) {
 
-    const errors: Partial<Record<keyof Todo, string | Date>> = {};
+    const errors: Partial<Record<keyof TodoFormValues, string | Date>> = {};
+
+    if( values.title.length === 0 ) {
+      errors.title = "title is required.";
+    }
+
+    if( values.deadline !== null && values.deadline !== '' ) {
+      if( !moment(values.deadline).isValid() ) {
+        errors.deadline = "Enter a deadline date";
+      }
+
+    }
 
     return errors;
   }
 
-  function onSubmit(values: any) {
+  function onSubmit(values: TodoFormValues) {
     if( id === 0 ) {
       // Create
       createTodo(values.title, values.status, values.deadline, values.description)
         .then( () => {
           moveListPage();
         })
-        .catch( (error) => console.log(error) );    
+        .catch( (error) => console.error(error) );    
     }
     else {
       // TODO Update
@@ -76,30 +92,37 @@ export default function TodoForm() {
         .then( () => {
           moveListPage();
         })
-        .catch( (error) => console.log(error) );    
+        .catch( (error) => console.error(error) );    
     
     }
+  }
+
+  interface TodoFormValues {
+        title: string;
+        deadline: string;
+        status : string;
+        description : string;
+        registDate?:string;
   }
 
   return (
     <div className="container">
       <h2 className="text-center my-4">Todo Edit</h2>
 
-      <Formik
-        initialValues={{ title: title, deadline: deadline, status: status, description: description }}
+      <Formik<TodoFormValues>
+        initialValues={{ title, deadline, registDate : registDateStr, status, description }}
         enableReinitialize={true}
         onSubmit={onSubmit}
-        onValidate={validate}  
+        validate={validate}  
         validateOnChange={false}
         validateOnBlur={false}
       >
-        {(props) => (
+        {(_) => (
           <Form>
             <ErrorMessage name="title" component="div" className="alert alert-warning" />
             <ErrorMessage name="deadline" component="div" className="alert alert-warning" />
             <ErrorMessage name="status" component="div" className="alert alert-warning" />
-            <ErrorMessage name="description" component="div" className="alert alert-warning" />
-
+            
             <fieldset className="form-group">
               <label htmlFor="todoTitle">Todo Title</label>
               <Field type="text" className="form-control" id="todoTitle" name="title" placeholder="Enter todo title" />
