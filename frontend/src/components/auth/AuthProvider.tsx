@@ -1,8 +1,10 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode } from 'react';
 
 import { AuthContext } from './AuthContext';
 
 import localAuthStore from '../../store/authStore';
+
+import { loginService } from '../../service/LoginService';
 
 type Props = {
     children: ReactNode;
@@ -12,16 +14,23 @@ export default function AuthProvider({ children }: Props) {
 
     const authStore = localAuthStore();
 
-    async function login(userId:string, password:string) {
-        // TODO JWT Token 발급
-        let isSuccess = (userId === 'demo' && password === 'dummy');
+    async function login(userId:string, password:string) : Promise<boolean> {
 
-        if( isSuccess ) {
-            authStore.setUserId(userId);
+        let isSuccess = false;
 
+        try {
+            const response = await loginService(userId, password);
+            isSuccess = response.data;
         }
-
-        authStore.setAuthenticated(isSuccess);
+        catch (e) {
+            isSuccess = false;
+        }
+        finally {
+            authStore.setAuthenticated(isSuccess);
+            if( isSuccess ) {
+                authStore.setUserId(userId);
+            }
+        }
 
         return isSuccess;
     }
