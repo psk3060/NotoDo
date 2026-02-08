@@ -6,7 +6,7 @@
 
 ### Backend
 - **Language**: Python 3.11
-- **Framework**: FastAPI
+- **Framework**: FastAPI, Beanie(파이썬 ORM)
 - **Server**: Uvicorn (ASGI)
 - **Validation**: Pydantic
 - **Authentication**: OAuth2 Bearer Token (JWT) - 하이브리드 보관
