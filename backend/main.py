@@ -3,6 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from model.Todo import Todo
 from model.TodoUpdate import TodoUpdate
 from service.ServiceFactory import get_todo_service
+from dotenv import load_dotenv
+import os
+
+# .env 파일 로드
+load_dotenv()
 
 app = FastAPI()
 
@@ -19,7 +24,8 @@ app.add_middleware(
     allow_headers=["*"],            # Allow all headers
 )
 
-ENVIRONMENT = "local"  # "local" 또는 "dev"
+# 환경변수 읽기
+ENVIRONMENT = os.getenv("TODO_ENV", "local")
 todo_service = get_todo_service(ENVIRONMENT)
 
 @app.get("/todos")
