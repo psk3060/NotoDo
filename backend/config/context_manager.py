@@ -8,6 +8,8 @@ from db.mongo import User
 
 from dotenv import load_dotenv
 
+from core.security import rsa_manager
+
 import os
 
 # .env 파일 로드
@@ -22,6 +24,7 @@ async def lifespan(app: FastAPI):
         f"?authMechanism=DEFAULT&authSource={os.getenv('MONGO_DATABASE_NAME', '')}"
     )
     await init_beanie(database=client.get_default_database(), document_models=[User])
+    rsa_manager.init()
     yield
     
     client.close()

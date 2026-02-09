@@ -17,6 +17,7 @@ import { Todo } from '../../model/Todo';
 import { createTodo } from '../../service/TodoService';
 
 import moment from "moment";
+import type TodoFormValues from '../../model/TodoFormValues';
 
 export default function TodoForm() {
 
@@ -95,14 +96,6 @@ export default function TodoForm() {
         .catch( (error) => console.error(error) );    
     
     }
-  }
-
-  interface TodoFormValues {
-        title: string;
-        deadline: string;
-        status : string;
-        description : string;
-        registDate?:string;
   }
 
   return (

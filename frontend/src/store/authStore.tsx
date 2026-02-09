@@ -10,6 +10,7 @@ interface AuthStore {
     setAccessToken : (token : string) => void;
     setRefreshToken : (token : string) => void;
     */
+   clearAuth : () => void;
 }
 
 const localAuthStore = create<AuthStore>()(
@@ -24,7 +25,11 @@ const localAuthStore = create<AuthStore>()(
             },
             setAuthenticated : (isAuthenticated : boolean) => {
                 set(_ => ({isAuthenticated}))
-            }
+            },
+            clearAuth : () => set({
+                userId : null,
+                isAuthenticated : false
+            })
         })
         , {
             name: "auth-store"
