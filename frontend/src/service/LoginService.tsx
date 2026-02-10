@@ -28,10 +28,10 @@ export async function loginService(userId:string, password:string): Promise<{ da
             // 1. 서버로부터 공개키 가져오기
             const publicKey = await fetchPublicKey(apiClient.defaults.baseURL!);
 
-            // 2. 비밀번호 암호화 TODO
+            // 2. 비밀번호 암호화
             const encryptedPassword = encryptPassword(password, publicKey);
 
-            // 3. 로그인 시도(TODO Token 발급)
+            // 3. 로그인 시도(Token 발급)
             result = await apiClient.post<LoginResponse>("/auth/login", {userId, encryptedPassword} as LoginRequest);
            
         } catch(error: any) {
@@ -42,7 +42,7 @@ export async function loginService(userId:string, password:string): Promise<{ da
                 result = {
                             data: {
                                 success: false,
-                                message: error.response.data?.detail || 'Login failed'
+                                message: error.response.data?.detail || '아이디 또는 비밀번호를 찾을 수 없습니다.'
                             }
                         };
             }
