@@ -1,15 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from model.Todo import Todo
-from model.TodoUpdate import TodoUpdate
-from service.ServiceFactory import get_todo_service
-from dotenv import load_dotenv
-import os
 
-# .env 파일 로드
-load_dotenv()
+from routes.todo import router as todo_router
+from routes.auth import router as auth_router
 
-app = FastAPI()
+from config.context_manager import lifespan
+
+app = FastAPI(lifespan=lifespan)
 
 origins = [
     "http://localhost",
@@ -24,27 +21,7 @@ app.add_middleware(
     allow_headers=["*"],            # Allow all headers
 )
 
-# 환경변수 읽기
-ENVIRONMENT = os.getenv("TODO_ENV", "local")
-todo_service = get_todo_service(ENVIRONMENT)
+app.include_router(todo_router)
+app.include_router(auth_router)
 
-@app.get("/todos")
-def read_todos():
-    return todo_service.read_todos()
 
-@app.get("/todos/{todo_id}")
-def read_todo_detail(todo_id: int):
-    return todo_service.read_todo_detail(todo_id)
-    
-@app.post("/todos")
-def create_todo(todo : Todo):
-    todo_service.create_todo(todo) 
-    return True
-
-@app.delete("/todos/{todo_id}")
-def delete_todo(todo_id : int) :
-    todo_service.delete_todo(todo_id)
-    
-@app.put("/todos/{todo_id}")
-def update_todo(todo_id : int, todo_update: TodoUpdate) :
-    todo_service.update_todo(todo_id, todo_update)

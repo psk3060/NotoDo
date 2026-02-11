@@ -1,22 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from './useAuth';
-import axios from 'axios';
 
 export default function Login() {
 
-  const authConext = useAuth();
+  const authContext = useAuth();
 
   let navigate = useNavigate();
   
-  let [userId, setUserId] = useState('demo');
-  let [password, setPassword] = useState('dummy');
+  const [userId, setUserId] = useState('demo');
+  const [password, setPassword] = useState('dummy');
 
   const [showErrorMessage, setShowErrorMessage] = useState(false);
   
   async function handleLogin() {
     // Handle login logic here
-    if ( await authConext.login(userId, password) ) {
+    if ( await authContext.login(userId, password) ) {
       navigate(`/todos`);
     }
     else {
