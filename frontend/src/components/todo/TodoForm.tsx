@@ -88,7 +88,7 @@ export default function TodoForm() {
         .catch( (error) => console.error(error) );    
     }
     else {
-      // TODO Update
+      // Update
       updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
         .then( () => {
           moveListPage();

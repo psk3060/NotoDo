@@ -1,9 +1,13 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 class LoginRequest(BaseModel) :
-    userId : str = Field(..., min_length=1, max_length=50)
-    encryptedPassword : str = Field(..., description="Base64 encoded RSA encrypted password")
+    userId : str = Field(..., min_length=1, max_length=50, description="회원ID")
     
-    def __init__(self, userId, encryptedPassword)  -> None:
-        super().__init__(userId = userId, encryptedPassword = encryptedPassword)
-        
+    encryptedPassword: Optional[str] = Field(..., description="암호화된 패스워드")
+    
+    encryptedAESKey :  Optional[str] = None
+    
+    # AES IV (Base64)
+    iv: Optional[str] = None
+    

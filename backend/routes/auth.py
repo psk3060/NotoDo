@@ -1,4 +1,4 @@
-# backend/routes/auth.py
+# routes/auth.py
 from fastapi import APIRouter, Request
 
 from model import LoginRequest, LoginResponse, PublicKeyResponse
@@ -11,13 +11,24 @@ router = APIRouter(
 )
 
 @router.post("/login", response_model=LoginResponse)
-async def user_authenticate(loginRequest : LoginRequest, request: Request) -> bool :
+async def login_proc(loginRequest : LoginRequest, request: Request) -> bool :
+    
+    '''Login 처리 메소드
+        1. IP 체크(5회) - 잠김 여부 파악
+        2. 패스워드 복호화
+        3. Token 발급
+    '''
     
     # TODO IP에서 5회 실패 했는가? (잠긴 상태인가?)
     authService = AuthServiceImpl()
-    
+    # 메시지
     message = ''
-    plain_password = rsa_manager.decrypt_password(loginRequest.encryptedPassword)
+    
+    # RSA는 Deprecated
+    # plain_password = rsa_manager.decrypt_password(loginRequest.encryptedPassword)
+    
+    # 평문으로 복호화
+    plain_password = rsa_manager.decrypt_password_AES(loginRequest)
     
     result = await authService.login(loginRequest.userId, plain_password)
     
@@ -43,10 +54,13 @@ async def user_authenticate(loginRequest : LoginRequest, request: Request) -> bo
         "success" : result
         , "message" : message
     }
+
+    
     
 @router.get("/public-key", response_model=PublicKeyResponse)
 async def get_publicKey() -> str : 
+    '''Client에 RSA Public Key 전달'''
     
     return {
-        "publicKey": rsa_manager.get_public_key_pem()
+        "publicKey": rsa_manager.export_public_key_pem()
     }
