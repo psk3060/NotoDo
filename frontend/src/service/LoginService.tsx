@@ -1,14 +1,17 @@
 import { apiClient } from '../config/ApiClient';
 import {ENV} from '../config/env';
 import { mockResponse } from './mock';
-import { fetchPublicKey, encryptPassword } from '../util/encryption';
+import { fetchPublicKey, generateAesSymmetricKey, encryptWrapKey, encryptPasswordAES } from '../util/encryption';
 import type LoginResponse from '../model/LoginResponse';
+import type LoginRequest from '../model/LoginRequest';
 
-interface LoginRequest {
-    userId: string;
-    encryptedPassword: string;
+export function toBase64(data: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]);
+  }
+  return btoa(binary);
 }
-
 
 
 export async function loginService(userId:string, password:string): Promise<{ data: LoginResponse }> {
@@ -24,15 +27,27 @@ export async function loginService(userId:string, password:string): Promise<{ da
     else {
 
         try {
-
             // 1. 서버로부터 공개키 가져오기
             const publicKey = await fetchPublicKey(apiClient.defaults.baseURL!);
 
-            // 2. 비밀번호 암호화
-            const encryptedPassword = encryptPassword(password, publicKey);
+            // WebCrypto API 사용(CryptoJS에서는 OAEP 패딩 제공 안 함)
 
-            // 3. 로그인 시도(Token 발급)
-            result = await apiClient.post<LoginResponse>("/auth/login", {userId, encryptedPassword} as LoginRequest);
+            // 2. AES Key 생성
+            const aesKey = await generateAesSymmetricKey();
+
+            // 3. AES Key를 RSA Public Key로 암호화(RSA-OAEP Key Wrapping)
+            const encryptedWrapAesKey : Uint8Array = await encryptWrapKey(publicKey, aesKey)
+            
+            // 4. 패스워드를 암호화한 AES 키로 암호화
+            const { encryptedPassword, iv  } = await encryptPasswordAES(password, aesKey);
+
+            // 5. Login 시도
+            result = await apiClient.post<LoginResponse>("/auth/login", {
+                userId
+                , encryptedPassword : toBase64(encryptedPassword)
+                , encryptedAESKey : toBase64(encryptedWrapAesKey)
+                , iv : toBase64(iv)
+            } as LoginRequest);
            
         } catch(error: any) {
             console.error('Login service error:', error);
