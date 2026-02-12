@@ -17,6 +17,7 @@ export default function AuthProvider({ children }: Props) {
 
         const response = await loginService(userId, password);
         let result = response.data;
+
         if( response.data.success ) {
             authStore.setUserId(userId);
         }

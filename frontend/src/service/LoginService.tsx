@@ -47,7 +47,10 @@ export async function loginService(userId:string, password:string): Promise<{ da
                 , encryptedPassword : toBase64(encryptedPassword)
                 , encryptedAESKey : toBase64(encryptedWrapAesKey)
                 , iv : toBase64(iv)
-            } as LoginRequest);
+            } as LoginRequest
+            , {
+                withCredentials: true
+            });
            
         } catch(error: any) {
             console.error('Login service error:', error);

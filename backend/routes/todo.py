@@ -4,13 +4,10 @@ from fastapi import APIRouter
 from model.Todo import Todo
 from model.TodoUpdate import TodoUpdate
 from service.ServiceFactory import get_todo_service
-from dotenv import load_dotenv
 
 import os
 
 # .env 파일 로드
-load_dotenv()
-
 router = APIRouter(
     prefix="/todos",
     tags=["todos"]
