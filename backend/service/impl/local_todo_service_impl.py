@@ -6,9 +6,9 @@ from typing import List
 class LocalTodoServiceImpl(TodoService):
     def __init__(self):
         self.todo_list = []
-        self.todo_list.append(Todo(1, "Sample Todo", "Pending", "2025-02-06 17:30", "2025-02-10", "This is a sample"))
-        self.todo_list.append(Todo(2, "Another Todo", "Pending", "2025-02-06 18:00", "2025-02-14", "This is another sample"))
-        self.todo_list.append(Todo(3, "Yet Another Todo", "Pending", "2025-02-06 21:35", "2025-02-10", "This is yet another sample"))
+        self.todo_list.append(Todo(id = 1, title = "Sample Todo", status = "Pending", registDate = "2025-02-06 17:30", deadline = "2025-02-10", description = "This is a sample"))
+        self.todo_list.append(Todo(id = 2, title = "Another Todo", status = "Pending", registDate = "2025-02-06 18:00", deadline = "2025-02-14", description = "This is another sample"))
+        self.todo_list.append(Todo(id = 3, title = "Yet Another Todo", status = "Pending", registDate = "2025-02-06 21:35", deadline = "2025-02-10", description = "This is yet another sample"))
         
     def read_todos(self) -> List[Todo]:
         return self.todo_list
