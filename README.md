@@ -21,7 +21,7 @@
 
 ### Database
 - PostgreSQL : Docker에서 실행(사용자, Refresh Token)
-- Redis : 캐싱(IP, Refresh Token)
+- Redis : 캐싱(IP)
 - MongoDB : Docker에서 실행(로그)
 
 ## TODO
