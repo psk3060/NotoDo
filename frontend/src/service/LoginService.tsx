@@ -14,8 +14,7 @@ export function toBase64(data: Uint8Array): string {
   return btoa(binary);
 }
 
-export function logoutProc() : boolean {
-    
+export async function logoutProc() : Promise<boolean> {
     let result : boolean = true;
 
     const userId = localAuthStore.getState().userId;
@@ -24,15 +23,13 @@ export function logoutProc() : boolean {
         result = userId === 'demo';
     }
     else {
-        apiClient.post<boolean>("/auth/logout")
-            .then(res => {
-                result = res.data;
-            })
-            .catch(e => {
-                console.error("Logout failed:", e);
-                result = false;
-            });
-
+        try {
+            const res = await apiClient.post<boolean>("/auth/logout");
+            return res.data;
+        } catch (e) {
+            console.error("Logout failed:", e);
+            return false;
+        }
     }
     return result;
 }

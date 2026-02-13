@@ -113,10 +113,10 @@ export async function updateTodo(id: number, newTodo: Todo) {
 }
 
 
-export async function withTokenCheck<T>(apiCall: () => Promise<T>, logout?: () => void): Promise<T | undefined> {
+export async function withTokenCheck<T>(fn: () => Promise<T>, logout: () => void): Promise<T | undefined> {
     
     try {
-        return await apiCall();
+        return await fn();
     } catch (error: any) {
         const data = error.response?.data;
         if (!data) throw error;
@@ -128,16 +128,29 @@ export async function withTokenCheck<T>(apiCall: () => Promise<T>, logout?: () =
                     await apiClient.post('/auth/refresh');
 
                     // access token 재발급 후 원래 API 재시도
-                    return await apiCall();
+                    return await fn();
                 } catch (refreshError) {
                     toast.error("재로그인이 필요합니다.");
-                    if (logout) setTimeout(() => logout(), 100);
+                    if (logout) {
+                        try {
+                            await logout();  // async 함수라면 await 필요
+                        } catch(e) {
+                            console.error("logout error:", e);
+                        }
+                    }
                 }
                 break;
             case "invalid":
             case "empty_token":
                 toast.error("토큰이 유효하지 않거나 비어 있습니다. 재로그인 해주세요");
-                if (logout) setTimeout(() => logout(), 100);
+                
+                if (logout) {
+                    try {
+                        await logout();  // async 함수라면 await 필요
+                    } catch(e) {
+                        console.error("logout error:", e);
+                    }
+                }
                 break;
 
             default:

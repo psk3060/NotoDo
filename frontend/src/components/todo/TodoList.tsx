@@ -30,8 +30,7 @@ export default function TodoList() {
                 response => {
                     setTodos(response.data);
                 }
-            ), 
-            () => ({ logout })
+            ), logout
         )
     }
     
