@@ -4,6 +4,7 @@ import { mockResponse } from './mock';
 import { fetchPublicKey, generateAesSymmetricKey, encryptWrapKey, encryptPasswordAES } from '../util/encryption';
 import type LoginResponse from '../model/LoginResponse';
 import type LoginRequest from '../model/LoginRequest';
+import localAuthStore from '../store/authStore';
 
 export function toBase64(data: Uint8Array): string {
   let binary = "";
@@ -13,8 +14,31 @@ export function toBase64(data: Uint8Array): string {
   return btoa(binary);
 }
 
+export function logoutProc() : boolean {
+    
+    let result : boolean = true;
 
-export async function loginService(userId:string, password:string): Promise<{ data: LoginResponse }> {
+    const userId = localAuthStore.getState().userId;
+
+    if( ENV.IS_DEV ) {
+        result = userId === 'demo';
+    }
+    else {
+        apiClient.post<boolean>("/auth/logout")
+            .then(res => {
+                result = res.data;
+            })
+            .catch(e => {
+                console.error("Logout failed:", e);
+                result = false;
+            });
+
+    }
+    return result;
+}
+
+
+export async function loginProc(userId:string, password:string): Promise<{ data: LoginResponse }> {
 
     let result: any;
 
@@ -47,10 +71,7 @@ export async function loginService(userId:string, password:string): Promise<{ da
                 , encryptedPassword : toBase64(encryptedPassword)
                 , encryptedAESKey : toBase64(encryptedWrapAesKey)
                 , iv : toBase64(iv)
-            } as LoginRequest
-            , {
-                withCredentials: true
-            });
+            } as LoginRequest);
            
         } catch(error: any) {
             console.error('Login service error:', error);

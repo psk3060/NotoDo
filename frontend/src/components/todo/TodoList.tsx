@@ -23,12 +23,26 @@ export default function TodoList() {
     useEffect( () => {refreshTodos();}, [] );    
 
     function refreshTodos()  { 
-        retrieveAllTodos().then( response => {
-            setTodos(response.data);
-        })
-        .catch( error => {
-            console.error("Error retrieving todos:", error);
-        });
+        retrieveAllTodos()
+            .then(response => {
+                setTodos(response.data);
+            })
+            .catch( (error) => {
+                if (!error.response) return;
+
+                const data = error.response.data;
+
+                switch (data.code) {
+                    case "expired":
+                        // refresh token으로 재발급 시도 TODO
+                        console.log("토큰 만료, refresh token 사용");
+                        break;
+                    case "invalid":
+                        // 재로그인
+                        console.log("유효하지 않은 토큰, 재로그인 필요");
+                        break;
+                }
+            });
     }
 
     function deleteTodo(id: number): void {

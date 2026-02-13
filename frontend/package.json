@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode dev",
-    "op": "vite --mode op",
+    "prod": "vite --mode prod",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

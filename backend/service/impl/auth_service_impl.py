@@ -4,8 +4,7 @@ from db.mongo import User
 from model import GenerateTokenResponse
 import os, jwt, uuid, json
 from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, status, Request, Response
-
+from fastapi import HTTPException, Request, Response
 
 class AuthServiceImpl(BaseModel) : 
     
@@ -54,7 +53,8 @@ class AuthServiceImpl(BaseModel) :
             httponly=True,
             secure=os.getenv('TODO_ENV') == "prod",
             samesite="lax",
-            max_age=60 * 30,          # 30분
+            max_age=60 * 15,          # 15분
+            # max_age=10,                 # 10초
             path="/"
         )
         
@@ -77,13 +77,13 @@ class AuthServiceImpl(BaseModel) :
         
         if token_type == "access":
             SECRET_KEY = os.getenv('ACCESS_TOKEN_SECRET_KEY', '')
-            expire = datetime.now(timezone.utc) + timedelta(minutes=30)
+            expire = datetime.now(timezone.utc) + timedelta(minutes=15) # seconds=10
         elif token_type == "refresh":
             SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         else :
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=400,
                 detail="잘못된 토큰 타입입니다."
             )
         
@@ -123,38 +123,21 @@ class AuthServiceImpl(BaseModel) :
         try:
             
             if not SECRET_KEY:
-                raise Exception()
+                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
             
             if not TOKEN_ALGORITHM:
-                raise RuntimeError(
-                    f"토큰 알고리즘이 설정되지 않았습니다."
-                )
-            
+                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
+
             payload = jwt.decode(token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM], issuer = TOKEN_ISSUER)
+            
+            payload["code"] = "success"
+            payload["message"] = "토큰이 정상적으로 인코딩 되었습니다."
             
             return json.dumps(payload)
         
-        except jwt.ExpiredSignatureError:
-            return json.dumps({
-                "type" : "tee"
-                , "message" : "Token expired"
-            })
-        
-        except jwt.InvalidTokenError:
-            return json.dumps({
-                "type" : "tie"
-                , "message" : "Invalid token"
-            })
-        except :
-            return json.dumps({
-                "type" : "sys"
-                , "message" : "Service Error"
-            })
+        except Exception as e:
+            raise e
             
-    
-    
-    
-    
-def clear_auth_cookies(response: Response):
-    response.delete_cookie("access_token", path="/")
-    response.delete_cookie("refresh_token", path="/auth/refresh")
+    def clear_auth_cookies(self, response: Response):
+        response.delete_cookie("access_token", path="/")
+        response.delete_cookie("refresh_token", path="/auth/refresh")

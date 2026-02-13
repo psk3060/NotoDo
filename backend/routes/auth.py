@@ -34,11 +34,6 @@ async def login_proc(loginRequest : LoginRequest, request: Request, response: Re
     
     result = await authService.login(user_id, plain_password)
     
-    client_ip = request.headers.get("x-forwarded-for") or request.client.host
-    
-    if ',' in client_ip:
-        client_ip = client_ip.split(',')[0].strip()
-    
     if result :
         returnMsg = "로그인 성공"
         
@@ -62,20 +57,21 @@ async def get_publicKey() -> str :
     }
     
 
-@router.get("/logout")
-def logout(respone : Response):
+@router.post("/logout")
+def logout(request : Request, response : Response):
     '''
         로그아웃 로직
             1. 사용자가 로그아웃 버튼 클릭
             2. 쿠키에 담긴 accessToken으로 로그아웃 요청
             3. 서버에서 Refresh Token 기준으로 세션 식별 →  Refresh Token revoke (Redis + PostgreSQL)
             4. accessToken, refreshToken 쿠키 삭제
-            5. 204 No Content 응답
+            5. 프론트엔드에서 로그아웃 진행
     '''
     
     authService = AuthServiceImpl()
-    authService.clear_auth_cookies(respone)
+    authService.clear_auth_cookies(response)
     
+    return True
 
 @router.post("/refresh")
 def refreshToken() :

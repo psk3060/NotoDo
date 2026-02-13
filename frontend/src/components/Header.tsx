@@ -15,12 +15,7 @@ export default function Header() {
             <div className="row">
                     <nav className="navbar navbar-expand-lg">
                         <div className="collapse navbar-collapse ">
-                            <ul className="navbar-nav">
-                                {
-                                    isAuthenticated 
-                                        && <li className="nav-item fs-5"><Link className="nav-link" to="/todos">Todos</Link></li> 
-                                }
-                            </ul>
+                            
                         </div>
                         <ul className="navbar-nav">
                             {

@@ -5,6 +5,7 @@ from routes.todo import router as todo_router
 from routes.auth import router as auth_router
 
 from config.context_manager import lifespan
+from middleware import JWTMiddleware
 
 app = FastAPI(lifespan=lifespan)
 
@@ -13,6 +14,7 @@ origins = [
     "http://localhost:5173"
 ]
 
+app.add_middleware(JWTMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,          # List of allowed origins
@@ -20,6 +22,7 @@ app.add_middleware(
     allow_methods=["*"],            # Allow all HTTP methods (GET, POST, PUT, etc.)
     allow_headers=["*"],            # Allow all headers
 )
+
 
 app.include_router(todo_router)
 app.include_router(auth_router)
