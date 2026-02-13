@@ -3,15 +3,16 @@ import { faPlus, faPenToSquare, faTrash} from '@fortawesome/free-solid-svg-icons
 
 import { useNavigate } from 'react-router-dom';
 
-import { deleteTodoById, retrieveAllTodos } from '../../service/TodoService';
+import { deleteTodoById, retrieveAllTodos, withTokenCheck } from '../../service/TodoService';
 
 import { useState, useEffect } from 'react';
 
 import { Todo } from '../../model/Todo';
-
+import { useAuth } from '../auth/useAuth';
 
 export default function TodoList() {
-
+    const { logout } = useAuth();
+    
     const [todos, setTodos] = useState<Todo[]>([]);
 
     let navigate = useNavigate();
@@ -22,36 +23,26 @@ export default function TodoList() {
 
     useEffect( () => {refreshTodos();}, [] );    
 
-    function refreshTodos()  { 
-        retrieveAllTodos()
-            .then(response => {
-                setTodos(response.data);
-            })
-            .catch( (error) => {
-                if (!error.response) return;
+    async function refreshTodos()  { 
 
-                const data = error.response.data;
-
-                switch (data.code) {
-                    case "expired":
-                        // refresh token으로 재발급 시도 TODO
-                        console.log("토큰 만료, refresh token 사용");
-                        break;
-                    case "invalid":
-                        // 재로그인
-                        console.log("유효하지 않은 토큰, 재로그인 필요");
-                        break;
+        await withTokenCheck(
+            () => retrieveAllTodos().then(
+                response => {
+                    setTodos(response.data);
                 }
-            });
+            ), 
+            () => ({ logout })
+        )
     }
+    
+    async function deleteTodo(id: number) {
+        await withTokenCheck(
+            () => deleteTodoById(id).then( () => {
+                refreshTodos();
+            })
+            , logout
+        )
 
-    function deleteTodo(id: number): void {
-        // TODO Alert
-        deleteTodoById(id).then( () => {
-            refreshTodos();
-        }).catch( error => {
-            console.error("Error deleting todo:", error);
-        });
     }
 
     return(

@@ -3,7 +3,7 @@ import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
 
 import { useNavigate } from 'react-router-dom';
 
-import {retrieveTodoById, updateTodo} from '../../service/TodoService';
+import {retrieveTodoById, updateTodo, withTokenCheck} from '../../service/TodoService';
 
 import { ErrorMessage, Field, Form, Formik } from "formik";
 
@@ -18,8 +18,11 @@ import { createTodo } from '../../service/TodoService';
 
 import moment from "moment";
 import type TodoFormValues from '../../model/TodoFormValues';
+import { useAuth } from '../auth/useAuth';
 
 export default function TodoForm() {
+
+  const { logout } = useAuth();
 
   let navigate = useNavigate();
 
@@ -37,6 +40,7 @@ export default function TodoForm() {
 
   useEffect( () => { retriegveTodo() }, [id]);
 
+  
   function retriegveTodo() {
     if(id > 0) {
       retrieveTodoById(id)
@@ -57,6 +61,7 @@ export default function TodoForm() {
     }
     
   }
+  
 
   let registDateStr = dateToString(registDate);
   
@@ -78,25 +83,31 @@ export default function TodoForm() {
     return errors;
   }
 
-  function onSubmit(values: TodoFormValues) {
+
+  async function onSubmit(values: TodoFormValues) {
     if( id === 0 ) {
-      // Create
-      createTodo(values.title, values.status, values.deadline, values.description)
-        .then( () => {
-          moveListPage();
-        })
-        .catch( (error) => console.error(error) );    
+      await withTokenCheck(
+                  () => createTodo(
+                          values.title
+                          , values.status
+                          , values.deadline
+                          , values.description
+                        ).then(() => { moveListPage();}).catch((error) => console.error(error)), 
+                  () => ({ logout })
+      )
     }
     else {
-      // Update
-      updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
-        .then( () => {
-          moveListPage();
-        })
-        .catch( (error) => console.error(error) );    
-    
+      await withTokenCheck(
+                  () => updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
+                              .then(() => { moveListPage();})
+                              .catch((error) => console.error(error))
+                  , () => ({ logout })
+      )
     }
   }
+
+
+
 
   return (
     <div className="container">

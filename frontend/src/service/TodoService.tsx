@@ -6,6 +6,7 @@ import { mockResponse } from './mock';
 import localTodoStore from "../store/localTodoStore";
 
 import { apiClient } from "../config/ApiClient";
+import { toast } from "react-toastify";
 
 export async function retrieveAllTodos() {
     let result: any;
@@ -19,8 +20,9 @@ export async function retrieveAllTodos() {
         // Server Retrieve
         result = apiClient.get('/todos');
     }
-    
+
     return result;
+    
 }
 
 export async function retrieveTodoById(id: number) : Promise<Todo | undefined> {
@@ -42,7 +44,7 @@ export async function retrieveTodoById(id: number) : Promise<Todo | undefined> {
 export async function createTodo(title: string, status: string, deadline: string, description : string) {
 
     let today = new Date();
-        let registDate = today.getFullYear() + "-"
+    let registDate = today.getFullYear() + "-"
             + String(today.getMonth() + 1).padStart(2, '0') + "-"
             + String(today.getDate()).padStart(2, '0') + " "
             + String(today.getHours()).padStart(2, '0') + ":"
@@ -110,3 +112,36 @@ export async function updateTodo(id: number, newTodo: Todo) {
 
 }
 
+
+export async function withTokenCheck<T>(apiCall: () => Promise<T>, logout?: () => void): Promise<T | undefined> {
+    
+    try {
+        return await apiCall();
+    } catch (error: any) {
+        const data = error.response?.data;
+        if (!data) throw error;
+
+        switch (data.code) {
+            case "expired":
+                try {
+                    // 쿠키 기반 refresh token 요청
+                    await apiClient.post('/auth/refresh');
+
+                    // access token 재발급 후 원래 API 재시도
+                    return await apiCall();
+                } catch (refreshError) {
+                    toast.error("재로그인이 필요합니다.");
+                    if (logout) setTimeout(() => logout(), 100);
+                }
+                break;
+            case "invalid":
+            case "empty_token":
+                toast.error("토큰이 유효하지 않거나 비어 있습니다. 재로그인 해주세요");
+                if (logout) setTimeout(() => logout(), 100);
+                break;
+
+            default:
+                throw error;
+        }
+    }
+}

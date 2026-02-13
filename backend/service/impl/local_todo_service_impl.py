@@ -13,12 +13,14 @@ class LocalTodoServiceImpl(TodoService):
     def read_todos(self, user_id : str) -> List[Todo]:
         return [x for x in self.todo_list if x.userId == user_id]
 
-    def read_todo_detail(self, todo_id: int) -> Todo: 
-        return [x for x in self.todo_list if x.id == todo_id][0]
+    def read_todo_detail(self, todo_id: int, user_id : str) -> Todo: 
+        return [x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0]
     
-    def create_todo(self, todo : Todo):
+    def create_todo(self, todo : Todo, user_id:str):
         maxId = 0
-    
+
+        todo.userId = user_id
+        
         if len(self.todo_list) > 0:
             for x in self.todo_list:
                 if x.id > maxId:
@@ -28,10 +30,13 @@ class LocalTodoServiceImpl(TodoService):
         todo.id = maxId
         self.todo_list.append(todo)    
         
-    def delete_todo(self, todo_id :int) :
-        self.todo_list.remove([x for x in self.todo_list if x.id == todo_id][0])
+    def delete_todo(self, todo_id :int, user_id : str) :
+        self.todo_list.remove([x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0])
 
-    def update_todo(self, todo_id : int, todo_update: TodoUpdate) :
+    def update_todo(self, todo_id : int, todo_update: TodoUpdate, user_id:str) :
+        
+        todo_update.userId = user_id
+        
         for index, todo in enumerate(self.todo_list):
             
             if todo.id == todo_id and todo.userId == todo_update.userId:
