@@ -41,23 +41,25 @@ export default function TodoForm() {
   useEffect( () => { retriegveTodo() }, [id]);
 
   
-  function retriegveTodo() {
+  async function retriegveTodo() {
     if(id > 0) {
-      retrieveTodoById(id)
-        .then(
-          (response: any) => {
-            setTitle(response.data.title);
-            setDeadline(response.data.deadline);
-            setStatus(response.data.status);
-            setDescription(response.data.description);
-            setRegistDate(new Date(response.data.registDate));
-            
-          }
-        )
-        .catch( (error) => console.error(error) );
+      await withTokenCheck(
+                    () => retrieveTodoById(id)
+                              .then(
+                                (response: any) => {
+                                  setTitle(response.data.title);
+                                  setDeadline(response.data.deadline);
+                                  setStatus(response.data.status);
+                                  setDescription(response.data.description);
+                                  setRegistDate(new Date(response.data.registDate));
+                                }
+                              )
+                    , logout
+      )
     }
     else {
-      setRegistDate(new Date());
+      // 정보는 없으므로, 강제 로그아웃은 시키지 않음 => 등록은 안 됨
+      setRegistDate(new Date())
     }
     
   }
@@ -87,22 +89,22 @@ export default function TodoForm() {
   async function onSubmit(values: TodoFormValues) {
     if( id === 0 ) {
       await withTokenCheck(
-                  () => createTodo(
-                          values.title
-                          , values.status
-                          , values.deadline
-                          , values.description
-                        ).then(() => { moveListPage();}).catch((error) => console.error(error)), 
-                  () => ({ logout })
+                    () => createTodo(values.title, values.status, values.deadline, values.description)
+                                .then(() => { moveListPage();})
+                                .catch((error) => console.error(error))
+                    , logout
       )
+
     }
     else {
+      
       await withTokenCheck(
-                  () => updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
+                    () => updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
                               .then(() => { moveListPage();})
                               .catch((error) => console.error(error))
-                  , () => ({ logout })
+                    , logout
       )
+
     }
   }
 
