@@ -3,6 +3,5 @@ from .LoginResponse import LoginResponse
 from .PublicKeyResponse import PublicKeyResponse
 from .Todo import Todo
 from .TodoUpdate import TodoUpdate
-from .GenerateTokenResponse import GenerateTokenResponse
 
-__all__ = ["LoginRequest", "LoginResponse", "PublicKeyResponse", "Todo", "TodoUpdate", "GenerateTokenResponse"]
+__all__ = ["LoginRequest", "LoginResponse", "PublicKeyResponse", "Todo", "TodoUpdate"]

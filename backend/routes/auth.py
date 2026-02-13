@@ -1,7 +1,8 @@
 # routes/auth.py
 from fastapi import APIRouter, Request, Response
+from fastapi.responses import JSONResponse
 
-from model import LoginRequest, LoginResponse, PublicKeyResponse, GenerateTokenResponse
+from model import LoginRequest, LoginResponse, PublicKeyResponse
 from service.impl import AuthServiceImpl
 from core.security import rsa_manager
 
@@ -74,6 +75,17 @@ def logout(request : Request, response : Response):
     return True
 
 @router.post("/refresh")
-def refreshToken() :
+async def refreshToken(request : Request, response: Response) :
     '''Refresh Token 갱신(TODO)'''
+    
+    refresh_token = request.cookies.get("refresh_token")
+    
+    if not refresh_token :
+        return JSONResponse(status_code=401,content={"code" : "empty_token", "message" : "토큰이 비어있습니다."})
+    
+    
+    authService = AuthServiceImpl()
+    
+    await authService.renewal_refresh_token(refresh_token, request, response)
+    
     return None

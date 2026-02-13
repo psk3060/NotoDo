@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from core.security import verify_password
 from db.mongo import User
-from model import GenerateTokenResponse
 import os, jwt, uuid, json
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request, Response
@@ -44,8 +43,6 @@ class AuthServiceImpl(BaseModel) :
         # 2. Refresh Token 생성
         refresh_token = await service.encodeToken(user_id, "refresh")
         
-        # tokenPair = GenerateTokenResponse(user_id = user_id, access_token = access_token, refresh_token = refresh_token)
-        
         # Access / Refresh Token을 Secure=True, SameSite=Lax, HttpOnly Cookie에 저장
         response.set_cookie(
             key="access_token",
@@ -54,7 +51,6 @@ class AuthServiceImpl(BaseModel) :
             secure=os.getenv('TODO_ENV') == "prod",
             samesite="lax",
             max_age=60 * 15,          # 15분
-            # max_age=10,                 # 10초
             path="/"
         )
         
@@ -141,3 +137,26 @@ class AuthServiceImpl(BaseModel) :
     def clear_auth_cookies(self, response: Response):
         response.delete_cookie("access_token", path="/")
         response.delete_cookie("refresh_token", path="/auth/refresh")
+        
+    
+    async def renewal_refresh_token(self, refresh_token : str, request : Request, response : Response) :
+        
+        SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')
+        TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
+        
+        try :
+            if not SECRET_KEY:
+                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
+            
+            if not TOKEN_ALGORITHM:
+                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
+            
+            payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
+
+            user_id = payload.get("user_id")
+            
+            await self.saveToken(user_id, request, response)
+            
+        except Exception as e:
+            raise e
+        
