@@ -5,7 +5,7 @@ from typing import List
 
 class TodoService(ABC):
     @abstractmethod
-    def read_todos() -> List[Todo]:
+    def read_todos(user_id : str) -> List[Todo]:
         pass
 
     @abstractmethod

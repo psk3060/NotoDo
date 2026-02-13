@@ -32,12 +32,9 @@ async def login_proc(loginRequest : LoginRequest, request: Request, response: Re
     
     user_id = loginRequest.userId
     
-    result = await authService.login(loginRequest.userId, plain_password)
+    result = await authService.login(user_id, plain_password)
     
     client_ip = request.headers.get("x-forwarded-for") or request.client.host
-    
-    access_token = ""
-    refresh_token = ""
     
     if ',' in client_ip:
         client_ip = client_ip.split(',')[0].strip()
@@ -45,27 +42,7 @@ async def login_proc(loginRequest : LoginRequest, request: Request, response: Re
     if result :
         returnMsg = "로그인 성공"
         
-        # Access Token 
-        
-        # 제거
-        if request.cookies.get("access_token"):
-            response.delete_cookie("access_token", path="/")
-        
-        # 발급
-        access_token = await authService.generateToken(user_id, "access")
-        
-        # Access Token 
-        
-        
-        # Refresh Token
-        
-        # Refresh Token : Redis에서 조회 → (Miss) PostgreSQL에서 조회 → (Miss) 새로 생성
-        refresh_token = await authService.generateToken(user_id, "refresh")
-        
-        tokenResponse = GenerateTokenResponse(user_id = user_id, access_token = access_token, refresh_token = refresh_token)
-        
-        await authService.saveToken(tokenResponse, request, response)
-        
+        await authService.saveToken(user_id, request, response)
         
         # TODO IP Redis 초기화
     else :
@@ -100,3 +77,7 @@ def logout(respone : Response):
     authService.clear_auth_cookies(respone)
     
 
+@router.post("/refresh")
+def refreshToken() :
+    '''Refresh Token 갱신(TODO)'''
+    return None

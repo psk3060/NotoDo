@@ -8,3 +8,4 @@ class Todo(BaseModel):
     registDate:Optional[str] = None
     deadline:Optional[str] = None
     description: Optional[str] = None
+    userId : Optional[str] = None

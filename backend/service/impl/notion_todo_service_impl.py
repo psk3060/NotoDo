@@ -6,7 +6,7 @@ from typing import List
 class NotionTodoServiceImpl(TodoService):
     
     # 모두 조회 TODO
-    def read_todos(self) -> List[Todo]:
+    def read_todos(self, user_id:str) -> List[Todo]:
         pass
 
     # 상세 조회 TODO

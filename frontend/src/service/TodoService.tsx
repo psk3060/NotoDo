@@ -8,7 +8,6 @@ import localTodoStore from "../store/localTodoStore";
 import { apiClient } from "../config/ApiClient";
 
 export async function retrieveAllTodos() {
-
     let result: any;
     
     if( ENV.IS_DEV ) {
@@ -21,8 +20,6 @@ export async function retrieveAllTodos() {
         result = apiClient.get('/todos');
     }
     
-    
-
     return result;
 }
 

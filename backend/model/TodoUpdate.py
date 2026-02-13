@@ -6,3 +6,4 @@ class TodoUpdate(BaseModel):
     status: Optional[str] = None
     deadline: Optional[str] = None
     description: Optional[str] = None 
+    userId : Optional[str] = None 
