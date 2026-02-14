@@ -1,13 +1,11 @@
 # backend/routes/todo.py
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
 
 from model.Todo import Todo
 from model.TodoUpdate import TodoUpdate
 from service.ServiceFactory import get_todo_service
-from service.impl import AuthServiceImpl
-from fastapi.responses import JSONResponse
 
-import os, json
+import os
 
 # .env 파일 로드
 router = APIRouter(
