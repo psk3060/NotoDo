@@ -1,7 +1,8 @@
 import {create} from 'zustand';
 import {createJSONStorage, persist} from 'zustand/middleware';
 
-import { Todo } from "../model/Todo";
+import {STORAGE_KEYS} from '@/shared/constants'
+import { Todo } from '@/model/Todo';
 
 interface TodoStore {
     todos: Todo[];
@@ -40,7 +41,7 @@ const localTodoStore = create<TodoStore>()(
             }
         }),
         {
-            name: "local-todo-store"
+            name: STORAGE_KEYS.LOCAL_TODO
             , storage: createJSONStorage(() => localStorage)
             , version: 1
         }

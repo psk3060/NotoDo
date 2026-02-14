@@ -3,12 +3,14 @@ import { faPlus, faPenToSquare, faTrash} from '@fortawesome/free-solid-svg-icons
 
 import { useNavigate } from 'react-router-dom';
 
-import { deleteTodoById, retrieveAllTodos, withTokenCheck } from '../../service/TodoService';
-
 import { useState, useEffect } from 'react';
 
-import { Todo } from '../../model/Todo';
-import { useAuth } from '../auth/useAuth';
+import { useAuth } from '@/components/auth/useAuth';
+import { Todo } from '@/model/Todo';
+import { deleteTodoById, retrieveAllTodos, withTokenCheck } from '@/service/TodoService';
+
+
+
 
 export default function TodoList() {
     const { logout } = useAuth();

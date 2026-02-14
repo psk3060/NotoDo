@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import localAuthStore from '../store/authStore';
+import localAuthStore from '@/store/authStore';
 
 export const apiClient = axios.create(
     {

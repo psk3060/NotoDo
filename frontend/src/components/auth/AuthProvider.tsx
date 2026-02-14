@@ -1,10 +1,11 @@
 import { type ReactNode } from 'react';
 
 import { AuthContext } from './AuthContext';
-import localAuthStore from '../../store/authStore';
-import { loginProc, logoutProc } from '../../service/LoginService';
-import type LoginResponse from '../../model/LoginResponse';
+
 import { toast } from "react-toastify";
+import localAuthStore from '@/store/authStore';
+import LoginResponse from '@/model/LoginResponse';
+import { loginProc, logoutProc } from '@/service/LoginService';
 
 type Props = {
     children: ReactNode;

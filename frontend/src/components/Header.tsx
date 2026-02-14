@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { useAuth } from "./auth/useAuth";
-import localAuthStore from "../store/authStore";
+import { useAuth } from "@/components/auth/useAuth";
+import localAuthStore from "@/store/authStore";
 
 export default function Header() {
 

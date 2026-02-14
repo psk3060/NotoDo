@@ -1,10 +1,13 @@
-import { apiClient } from '../config/ApiClient';
-import {ENV} from '../config/env';
-import { mockResponse } from './mock';
-import { fetchPublicKey, generateAesSymmetricKey, encryptWrapKey, encryptPasswordAES } from '../util/encryption';
-import type LoginResponse from '../model/LoginResponse';
-import type LoginRequest from '../model/LoginRequest';
-import localAuthStore from '../store/authStore';
+import { apiClient } from "@/config/ApiClient";
+import { ENV } from "@/config/env";
+import LoginResponse from "@/model/LoginResponse";
+import localAuthStore from "@/store/authStore";
+import { mockResponse } from "./mock";
+import { encryptPasswordAES, encryptWrapKey, fetchPublicKey, generateAesSymmetricKey } from "@/util/encryption";
+import LoginRequest from "@/model/LoginRequest";
+
+import {API_ENDPOINTS} from '@/shared/constants';
+
 
 export function toBase64(data: Uint8Array): string {
   let binary = "";
@@ -24,7 +27,7 @@ export async function logoutProc() : Promise<boolean> {
     }
     else {
         try {
-            const res = await apiClient.post<boolean>("/auth/logout");
+            const res = await apiClient.post<boolean>(API_ENDPOINTS.AUTH.LOGOUT);
             return res.data;
         } catch (e) {
             console.error("Logout failed:", e);
@@ -63,7 +66,7 @@ export async function loginProc(userId:string, password:string): Promise<{ data:
             const { encryptedPassword, iv  } = await encryptPasswordAES(password, aesKey);
 
             // 5. Login 시도
-            result = await apiClient.post<LoginResponse>("/auth/login", {
+            result = await apiClient.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, {
                 userId
                 , encryptedPassword : toBase64(encryptedPassword)
                 , encryptedAESKey : toBase64(encryptedWrapAesKey)

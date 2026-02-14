@@ -40,9 +40,9 @@ export const TOAST_MESSAGES = {
         INVALID_TOKEN : '토큰이 유효하지 않거나 비어 있습니다. 재로그인 해주세요.'
     },
     TODO : {
-        CREATE_SUCCESS : '',
-        UPDATE_SUCCESS : '',
-        DELETE_SUCCESS : '',
+        CREATE_SUCCESS : 'Todo가 생성되었습니다.',
+        UPDATE_SUCCESS : 'Todo가 수정되었습니다.',
+        DELETE_SUCCESS : 'Todo가 삭제되었습니다.',
     }
 } as const;
 

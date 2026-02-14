@@ -1,12 +1,11 @@
-import { Todo } from "../model/Todo";
-import {ENV} from '../config/env';
-
-import { mockResponse } from './mock';
-
-import localTodoStore from "../store/localTodoStore";
-
-import { apiClient } from "../config/ApiClient";
 import { toast } from "react-toastify";
+
+import {API_ENDPOINTS, ERROR_CODES, TOAST_MESSAGES} from '@/shared/constants';
+import { ENV } from "@/config/env";
+import localTodoStore from "@/store/todoStore";
+import { mockResponse } from "./mock";
+import { apiClient } from "@/config/ApiClient";
+import { Todo } from "@/model/Todo";
 
 export async function retrieveAllTodos() {
     let result: any;
@@ -18,7 +17,7 @@ export async function retrieveAllTodos() {
     }
     else {
         // Server Retrieve
-        result = apiClient.get('/todos');
+        result = apiClient.get(API_ENDPOINTS.TODOS.BASE);
     }
 
     return result;
@@ -68,7 +67,7 @@ export async function createTodo(title: string, status: string, deadline: string
         };
 
         // Server Create
-        apiClient.post(`/todos`, todo);
+        apiClient.post(API_ENDPOINTS.TODOS.BASE, todo);
         
     }
     
@@ -122,15 +121,15 @@ export async function withTokenCheck<T>(fn: () => Promise<T>, logout: () => void
         if (!data) throw error;
 
         switch (data.code) {
-            case "expired":
+            case ERROR_CODES.AUTH.TOKEN_EXPIRED:
                 try {
-                    // 쿠키 기반 refresh token 요청
-                    await apiClient.post('/auth/refresh');
+                    // refresh token 갱신 요청
+                    await apiClient.post(API_ENDPOINTS.AUTH.REFRESH);
 
                     // access token 재발급 후 원래 API 재시도
                     return await fn();
                 } catch (refreshError) {
-                    toast.error("재로그인이 필요합니다.");
+                    toast.error(TOAST_MESSAGES.AUTH.LOGIN_REQUIRED);
                     if (logout) {
                         try {
                             await logout();  // async 함수라면 await 필요
@@ -140,9 +139,9 @@ export async function withTokenCheck<T>(fn: () => Promise<T>, logout: () => void
                     }
                 }
                 break;
-            case "invalid":
-            case "empty_token":
-                toast.error("토큰이 유효하지 않거나 비어 있습니다. 재로그인 해주세요");
+            case ERROR_CODES.AUTH.TOKEN_INVALID:
+            case ERROR_CODES.AUTH.TOKEN_EMPTY:
+                toast.error(TOAST_MESSAGES.AUTH.INVALID_TOKEN);
                 
                 if (logout) {
                     try {

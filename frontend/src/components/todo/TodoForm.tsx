@@ -2,23 +2,18 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
 
 import { useNavigate } from 'react-router-dom';
-
-import {retrieveTodoById, updateTodo, withTokenCheck} from '../../service/TodoService';
-
 import { ErrorMessage, Field, Form, Formik } from "formik";
-
-import { useNumberParam } from '../../util/useNumberParam';
-
 import {useEffect, useState} from 'react';
-import { dateToString } from '../../util/useDateParam';
-
-import { Todo } from '../../model/Todo';
-
-import { createTodo } from '../../service/TodoService';
-
 import moment from "moment";
-import type TodoFormValues from '../../model/TodoFormValues';
-import { useAuth } from '../auth/useAuth';
+
+import { useAuth } from '@/components/auth/useAuth';
+import { useNumberParam } from '@/util/useNumberParam';
+import { createTodo, retrieveTodoById, updateTodo, withTokenCheck } from '@/service/TodoService';
+import { dateToString } from '@/util/useDateParam';
+import TodoFormValues from '@/model/TodoFormValues';
+import { Todo } from '@/model/Todo';
+
+
 
 export default function TodoForm() {
 
@@ -107,8 +102,6 @@ export default function TodoForm() {
 
     }
   }
-
-
 
 
   return (

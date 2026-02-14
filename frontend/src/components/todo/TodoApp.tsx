@@ -1,15 +1,14 @@
 import TodoList from "./TodoList";
 import TodoForm from "./TodoForm";
 
-import Login from "../auth/Login";
-
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import AuthProvider from "../auth/AuthProvider";
+
 
 import { type PropsWithChildren } from "react";
-
-import Header from "../Header";
-import localAuthStore from "../../store/authStore";
+import localAuthStore from "@/store/authStore";
+import AuthProvider from "@/components/auth/AuthProvider";
+import Header from "@/components/Header";
+import Login from "@/components/auth/Login";
 
 function AuthenticatedRoute({children}:PropsWithChildren) {
 
