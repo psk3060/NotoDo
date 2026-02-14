@@ -6,21 +6,21 @@ from typing import List
 class NotionTodoServiceImpl(TodoService):
     
     # 모두 조회 TODO
-    def read_todos(self) -> List[Todo]:
+    def read_todos(self, user_id:str) -> List[Todo]:
         pass
 
     # 상세 조회 TODO
-    def read_todo_detail(self, todo_id: int) -> Todo: 
+    def read_todo_detail(self, todo_id: int, user_id:str) -> Todo: 
         pass
 
     # 작업 추가 TODO
-    def create_todo(self, todo : Todo):
+    def create_todo(self, todo : Todo, user_id:str):
         pass
         
     # 작업 삭제 TODO
-    def delete_todo(self, todo_id :int) :
+    def delete_todo(self, todo_id :int, user_id:str) :
         pass
 
     # 작업 수정 TODO
-    def update_todo(self, todo_id : int, todo_update: TodoUpdate) :
+    def update_todo(self, todo_id : int, todo_update: TodoUpdate, user_id:str) :
         pass

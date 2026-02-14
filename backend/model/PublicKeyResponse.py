@@ -1,4 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
 
 class PublicKeyResponse(BaseModel):
-    publicKey: str
+    publicKey: str = Field(...)

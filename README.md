@@ -19,10 +19,10 @@
 - **Compiler**: SWC
 - **Tooling**: ESLint, Prettier
 
-### Database
-- PostgreSQL : Docker에서 실행(사용자, Refresh Token)
-- Redis : 캐싱(IP)
-- MongoDB : Docker에서 실행(로그)
+### Database(Docker에서 실행)
+- PostgreSQL : 사용자, Refresh Token(이력 확인, 권한 회수 대상 식별 / 블랙리스트 관리)
+- Redis : IP(접근 권한), Refresh Token(Refresh Token 유효성)
+- MongoDB : 로그인 시도 이력(성공 / 실패), 기능 점근 이력(성공 / 실패)
 
 ## TODO
 - [X] 프로젝트 Init
@@ -33,7 +33,7 @@
 - [X] 서버 연동 : 파이썬(FastAPI) Todo 목록 CRUD 구현(Mock)
 - [X] 서버 연동 : 비밀번호 암복호화(RSA)
 - [X] 서버 연동 : 비밀번호 하이브리드 암복호화(RSA + AES)
-- [ ] 서버 연동 : 사용자 인증 JWT 이용(Statelessful)
+- [X] 서버 연동 : 사용자 인증 JWT 이용(Redis 연동)
 - [ ] 프론트엔드 : 리팩토링(프론트엔드 완료)
 - [ ] 서버 DB 변경 : PostgreSQL으로 DB 마이그레이션
 - [ ] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)

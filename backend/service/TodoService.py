@@ -5,21 +5,21 @@ from typing import List
 
 class TodoService(ABC):
     @abstractmethod
-    def read_todos() -> List[Todo]:
+    def read_todos(user_id : str) -> List[Todo]:
         pass
 
     @abstractmethod
-    def read_todo_detail(todo_id: int):
+    def read_todo_detail(todo_id: int, user_id : str):
         pass
         
     @abstractmethod
-    def create_todo(todo : Todo):
+    def create_todo(todo : Todo, user_id : str):
         pass
 
     @abstractmethod
-    def delete_todo(todo_id : int) :
+    def delete_todo(todo_id : int, user_id : str) :
         pass
     
     @abstractmethod
-    def update_todo(todo_id : int, todo_update: TodoUpdate) :
+    def update_todo(todo_id : int, todo_update: TodoUpdate, user_id : str) :
         pass

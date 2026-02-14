@@ -4,13 +4,24 @@ import '@fortawesome/fontawesome-svg-core/styles.css'
 import { config } from '@fortawesome/fontawesome-svg-core'
 
 import TodoApp from "./components/todo/TodoApp";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 config.autoAddCss = false
 
 function App() {
   return (
-    <>
-      <TodoApp />
+      <>
+        <ToastContainer 
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnHover
+          draggable
+        />
+        <TodoApp />
+      
     </>
   )
 }

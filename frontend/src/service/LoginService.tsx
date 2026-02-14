@@ -4,6 +4,7 @@ import { mockResponse } from './mock';
 import { fetchPublicKey, generateAesSymmetricKey, encryptWrapKey, encryptPasswordAES } from '../util/encryption';
 import type LoginResponse from '../model/LoginResponse';
 import type LoginRequest from '../model/LoginRequest';
+import localAuthStore from '../store/authStore';
 
 export function toBase64(data: Uint8Array): string {
   let binary = "";
@@ -13,8 +14,28 @@ export function toBase64(data: Uint8Array): string {
   return btoa(binary);
 }
 
+export async function logoutProc() : Promise<boolean> {
+    let result : boolean = true;
 
-export async function loginService(userId:string, password:string): Promise<{ data: LoginResponse }> {
+    const userId = localAuthStore.getState().userId;
+
+    if( ENV.IS_DEV ) {
+        result = userId === 'demo';
+    }
+    else {
+        try {
+            const res = await apiClient.post<boolean>("/auth/logout");
+            return res.data;
+        } catch (e) {
+            console.error("Logout failed:", e);
+            return false;
+        }
+    }
+    return result;
+}
+
+
+export async function loginProc(userId:string, password:string): Promise<{ data: LoginResponse }> {
 
     let result: any;
 

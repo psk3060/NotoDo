@@ -3,7 +3,7 @@ import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
 
 import { useNavigate } from 'react-router-dom';
 
-import {retrieveTodoById, updateTodo} from '../../service/TodoService';
+import {retrieveTodoById, updateTodo, withTokenCheck} from '../../service/TodoService';
 
 import { ErrorMessage, Field, Form, Formik } from "formik";
 
@@ -18,8 +18,11 @@ import { createTodo } from '../../service/TodoService';
 
 import moment from "moment";
 import type TodoFormValues from '../../model/TodoFormValues';
+import { useAuth } from '../auth/useAuth';
 
 export default function TodoForm() {
+
+  const { logout } = useAuth();
 
   let navigate = useNavigate();
 
@@ -37,26 +40,30 @@ export default function TodoForm() {
 
   useEffect( () => { retriegveTodo() }, [id]);
 
-  function retriegveTodo() {
+  
+  async function retriegveTodo() {
     if(id > 0) {
-      retrieveTodoById(id)
-        .then(
-          (response: any) => {
-            setTitle(response.data.title);
-            setDeadline(response.data.deadline);
-            setStatus(response.data.status);
-            setDescription(response.data.description);
-            setRegistDate(new Date(response.data.registDate));
-            
-          }
-        )
-        .catch( (error) => console.error(error) );
+      await withTokenCheck(
+                    () => retrieveTodoById(id)
+                              .then(
+                                (response: any) => {
+                                  setTitle(response.data.title);
+                                  setDeadline(response.data.deadline);
+                                  setStatus(response.data.status);
+                                  setDescription(response.data.description);
+                                  setRegistDate(new Date(response.data.registDate));
+                                }
+                              )
+                    , logout
+      )
     }
     else {
-      setRegistDate(new Date());
+      // 정보는 없으므로, 강제 로그아웃은 시키지 않음 => 등록은 안 됨
+      setRegistDate(new Date())
     }
     
   }
+  
 
   let registDateStr = dateToString(registDate);
   
@@ -78,25 +85,31 @@ export default function TodoForm() {
     return errors;
   }
 
-  function onSubmit(values: TodoFormValues) {
+
+  async function onSubmit(values: TodoFormValues) {
     if( id === 0 ) {
-      // Create
-      createTodo(values.title, values.status, values.deadline, values.description)
-        .then( () => {
-          moveListPage();
-        })
-        .catch( (error) => console.error(error) );    
+      await withTokenCheck(
+                    () => createTodo(values.title, values.status, values.deadline, values.description)
+                                .then(() => { moveListPage();})
+                                .catch((error) => console.error(error))
+                    , logout
+      )
+
     }
     else {
-      // Update
-      updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
-        .then( () => {
-          moveListPage();
-        })
-        .catch( (error) => console.error(error) );    
-    
+      
+      await withTokenCheck(
+                    () => updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
+                              .then(() => { moveListPage();})
+                              .catch((error) => console.error(error))
+                    , logout
+      )
+
     }
   }
+
+
+
 
   return (
     <div className="container">

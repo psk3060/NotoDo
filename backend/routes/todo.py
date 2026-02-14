@@ -1,16 +1,13 @@
 # backend/routes/todo.py
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from model.Todo import Todo
 from model.TodoUpdate import TodoUpdate
 from service.ServiceFactory import get_todo_service
-from dotenv import load_dotenv
 
 import os
 
 # .env 파일 로드
-load_dotenv()
-
 router = APIRouter(
     prefix="/todos",
     tags=["todos"]
@@ -21,22 +18,22 @@ ENVIRONMENT = os.getenv("TODO_ENV", "local")
 todo_service = get_todo_service(ENVIRONMENT)
 
 @router.get("")
-def read_todos():
-    return todo_service.read_todos()
+def read_todos(request: Request):
+    return todo_service.read_todos(request.state.user)
 
 @router.get("/{todo_id}")
-def read_todo_detail(todo_id: int):
-    return todo_service.read_todo_detail(todo_id)
+def read_todo_detail(todo_id: int, request: Request):
+    return todo_service.read_todo_detail(todo_id, request.state.user)
     
 @router.post("")
-def create_todo(todo : Todo):
-    todo_service.create_todo(todo) 
+def create_todo(todo : Todo, request: Request):
+    todo_service.create_todo(todo, request.state.user) 
     return True
 
 @router.delete("/{todo_id}")
-def delete_todo(todo_id : int) :
-    todo_service.delete_todo(todo_id)
+def delete_todo(todo_id : int, request: Request) :
+    todo_service.delete_todo(todo_id, request.state.user)
     
 @router.put("/{todo_id}")
-def update_todo(todo_id : int, todo_update: TodoUpdate) :
-    todo_service.update_todo(todo_id, todo_update)
+def update_todo(todo_id : int, todo_update: TodoUpdate, request: Request) :
+    todo_service.update_todo(todo_id, todo_update, request.state.user)

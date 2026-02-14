@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from './useAuth';
 
+
 export default function Login() {
 
   const authContext = useAuth();
@@ -11,28 +12,17 @@ export default function Login() {
   const [userId, setUserId] = useState('demo');
   const [password, setPassword] = useState('dummy');
 
-  const [showErrorMessage, setShowErrorMessage] = useState(false);
-  
   async function handleLogin() {
     // Handle login logic here
     if ( await authContext.login(userId, password) ) {
       navigate(`/todos`);
     }
-    else {
-      setShowErrorMessage(true);
-    }
-
   }
 
   return (
     <div className="container w-25 mt-5 border p-4 rounded">
 
         <h2>Login Page</h2>
-
-        { 
-                showErrorMessage 
-            && <div className="errorMessage">Authentication Failed Prease check your credentials.</div> 
-        }
 
         <div className='login-form'>
           <fieldset className="form-group">

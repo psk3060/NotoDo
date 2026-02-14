@@ -6,19 +6,21 @@ from typing import List
 class LocalTodoServiceImpl(TodoService):
     def __init__(self):
         self.todo_list = []
-        self.todo_list.append(Todo(1, "Sample Todo", "Pending", "2025-02-06 17:30", "2025-02-10", "This is a sample"))
-        self.todo_list.append(Todo(2, "Another Todo", "Pending", "2025-02-06 18:00", "2025-02-14", "This is another sample"))
-        self.todo_list.append(Todo(3, "Yet Another Todo", "Pending", "2025-02-06 21:35", "2025-02-10", "This is yet another sample"))
+        self.todo_list.append(Todo(id = 1, title = "Sample Todo", status = "Pending", registDate = "2025-02-06 17:30", deadline = "2025-02-10", description = "This is a sample", userId = "demo"))
+        self.todo_list.append(Todo(id = 2, title = "Another Todo", status = "Pending", registDate = "2025-02-06 18:00", deadline = "2025-02-14", description = "This is another sample", userId = "demo"))
+        self.todo_list.append(Todo(id = 3, title = "Yet Another Todo", status = "Pending", registDate = "2025-02-06 21:35", deadline = "2025-02-10", description = "This is yet another sample", userId = "demo"))
         
-    def read_todos(self) -> List[Todo]:
-        return self.todo_list
+    def read_todos(self, user_id : str) -> List[Todo]:
+        return [x for x in self.todo_list if x.userId == user_id]
 
-    def read_todo_detail(self, todo_id: int) -> Todo: 
-        return [x for x in self.todo_list if x.id == todo_id][0]
+    def read_todo_detail(self, todo_id: int, user_id : str) -> Todo: 
+        return [x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0]
     
-    def create_todo(self, todo : Todo):
+    def create_todo(self, todo : Todo, user_id:str):
         maxId = 0
-    
+
+        todo.userId = user_id
+        
         if len(self.todo_list) > 0:
             for x in self.todo_list:
                 if x.id > maxId:
@@ -28,13 +30,16 @@ class LocalTodoServiceImpl(TodoService):
         todo.id = maxId
         self.todo_list.append(todo)    
         
-    def delete_todo(self, todo_id :int) :
-        self.todo_list.remove([x for x in self.todo_list if x.id == todo_id][0])
+    def delete_todo(self, todo_id :int, user_id : str) :
+        self.todo_list.remove([x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0])
 
-    def update_todo(self, todo_id : int, todo_update: TodoUpdate) :
+    def update_todo(self, todo_id : int, todo_update: TodoUpdate, user_id:str) :
+        
+        todo_update.userId = user_id
+        
         for index, todo in enumerate(self.todo_list):
             
-            if todo.id == todo_id:
+            if todo.id == todo_id and todo.userId == todo_update.userId:
                 # 기존 todo를 직접 수정 (순서 유지)
                 updated_data = todo.dict()
             

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode dev",
-    "op": "vite --mode op",
+    "prod": "vite --mode prod",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -24,6 +24,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.13.0",
+    "react-toastify": "^11.0.5",
     "sass": "^1.97.3",
     "zustand": "^5.0.11"
   },

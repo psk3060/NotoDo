@@ -3,15 +3,16 @@ import { faPlus, faPenToSquare, faTrash} from '@fortawesome/free-solid-svg-icons
 
 import { useNavigate } from 'react-router-dom';
 
-import { deleteTodoById, retrieveAllTodos } from '../../service/TodoService';
+import { deleteTodoById, retrieveAllTodos, withTokenCheck } from '../../service/TodoService';
 
 import { useState, useEffect } from 'react';
 
 import { Todo } from '../../model/Todo';
-
+import { useAuth } from '../auth/useAuth';
 
 export default function TodoList() {
-
+    const { logout } = useAuth();
+    
     const [todos, setTodos] = useState<Todo[]>([]);
 
     let navigate = useNavigate();
@@ -22,22 +23,25 @@ export default function TodoList() {
 
     useEffect( () => {refreshTodos();}, [] );    
 
-    function refreshTodos()  { 
-        retrieveAllTodos().then( response => {
-            setTodos(response.data);
-        })
-        .catch( error => {
-            console.error("Error retrieving todos:", error);
-        });
-    }
+    async function refreshTodos()  { 
 
-    function deleteTodo(id: number): void {
-        // TODO Alert
-        deleteTodoById(id).then( () => {
-            refreshTodos();
-        }).catch( error => {
-            console.error("Error deleting todo:", error);
-        });
+        await withTokenCheck(
+            () => retrieveAllTodos().then(
+                response => {
+                    setTodos(response.data);
+                }
+            ), logout
+        )
+    }
+    
+    async function deleteTodo(id: number) {
+        await withTokenCheck(
+            () => deleteTodoById(id).then( () => {
+                refreshTodos();
+            })
+            , logout
+        )
+
     }
 
     return(
