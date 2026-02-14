@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import {createJSONStorage, persist} from 'zustand/middleware';
 
 import {STORAGE_KEYS} from '@/shared/constants'
-import { Todo } from '@/model/Todo';
+import { Todo, TodoListItem } from '@/shared/types';
 
 interface TodoStore {
     todos: Todo[];
@@ -14,9 +14,9 @@ interface TodoStore {
 }
 
 const initialValues: Todo[] = [
-    new Todo(1, "Sample Todo", "Pending", "2025-02-06 17:30", "2025-02-10", "This is a sample"),       
-    new Todo(2, "Another Todo", "Pending", "2025-02-06 18:00", "2025-02-14", "This is another sample"),
-    new Todo(3, "Yet Another Todo", "Pending", "2025-02-06 21:35", "2025-02-10", "This is yet another sample")
+    { id : 1, title : "Sample Todo", status : "Pending", registDate : "2025-02-06 17:30", deadline : "2025-02-10", description : "This is a sample"}
+    , { id : 2, title : "Another Todo", status : "Pending", registDate : "2025-02-06 18:00", deadline : "2025-02-14", description : "This is another sample"}
+    , { id : 3, title : "Yet Another Todo", status : "Pending", registDate : "2025-02-06 21:35", deadline : "2025-02-10", description : "This is yet another sample"}
 ];
 
 const localTodoStore = create<TodoStore>()(

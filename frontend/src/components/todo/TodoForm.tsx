@@ -10,9 +10,7 @@ import { useAuth } from '@/components/auth/useAuth';
 import { useNumberParam } from '@/util/useNumberParam';
 import { createTodo, retrieveTodoById, updateTodo, withTokenCheck } from '@/service/TodoService';
 import { dateToString } from '@/util/useDateParam';
-import TodoFormValues from '@/model/TodoFormValues';
-import { Todo } from '@/model/Todo';
-
+import { TodoFormValues } from '@/shared/types';
 
 
 export default function TodoForm() {
@@ -93,8 +91,18 @@ export default function TodoForm() {
     }
     else {
       
+      
+
       await withTokenCheck(
-                    () => updateTodo(id, new Todo(id, values.title, values.status, registDateStr, values.deadline, values.description))
+        
+                    () => updateTodo(id, {
+                                            id
+                                            , title : values.title
+                                            , status : values.status
+                                            , deadline : values.deadline
+                                            , description : values.description
+                                          }
+                                      )
                               .then(() => { moveListPage();})
                               .catch((error) => console.error(error))
                     , logout

@@ -4,8 +4,9 @@ import { AuthContext } from './AuthContext';
 
 import { toast } from "react-toastify";
 import localAuthStore from '@/store/authStore';
-import LoginResponse from '@/model/LoginResponse';
+
 import { loginProc, logoutProc } from '@/service/LoginService';
+import { LoginResponse } from '@/shared/types';
 
 type Props = {
     children: ReactNode;

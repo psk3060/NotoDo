@@ -2,14 +2,7 @@ import {create} from 'zustand';
 import {createJSONStorage, persist} from 'zustand/middleware';
 
 import {STORAGE_KEYS} from '@/shared/constants'
-
-interface AuthStore {
-    userId : string | null;
-    isAuthenticated : boolean;
-    setUserId : (userId : string) => void;
-    setAuthenticated : (isAuthenticated : boolean) => void;
-    clearAuth : () => void;
-}
+import { AuthStore } from '@/shared/types';
 
 const localAuthStore = create<AuthStore>()(
     persist(

@@ -6,16 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
 import { useAuth } from '@/components/auth/useAuth';
-import { Todo } from '@/model/Todo';
+
 import { deleteTodoById, retrieveAllTodos, withTokenCheck } from '@/service/TodoService';
-
-
-
+import { TodoListItem } from '@/shared/types';
 
 export default function TodoList() {
     const { logout } = useAuth();
     
-    const [todos, setTodos] = useState<Todo[]>([]);
+    const [todos, setTodos] = useState<TodoListItem[]>([]);
 
     let navigate = useNavigate();
 

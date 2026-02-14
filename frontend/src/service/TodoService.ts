@@ -5,7 +5,8 @@ import { ENV } from "@/config/env";
 import localTodoStore from "@/store/todoStore";
 import { mockResponse } from "./mock";
 import { apiClient } from "@/config/ApiClient";
-import { Todo } from "@/model/Todo";
+
+import { Todo, UpdateTodoPayload } from "@/shared/types";
 
 export async function retrieveAllTodos() {
     let result: any;
@@ -53,7 +54,16 @@ export async function createTodo(title: string, status: string, deadline: string
         
         // id = MaxID + 1
         let maxId = localTodoStore.getState().todos.reduce( (max, todo) => todo.id! > max ? todo.id! : max , 0) + 1;
-        localTodoStore.getState().addTodo( new Todo(maxId, title, status, registDate, deadline, description) );
+        localTodoStore.getState().addTodo( 
+                                            {
+                                                id : maxId
+                                                , title
+                                                , status
+                                                , registDate
+                                                , deadline
+                                                , description
+                                            }
+        );
         
     }
     else {
@@ -87,7 +97,7 @@ export async function deleteTodoById(id: number) {
     return mockResponse(true);
 }   
 
-export async function updateTodo(id: number, newTodo: Todo) {
+export async function updateTodo(id: number, newTodo: UpdateTodoPayload) {
 
     if( ENV.IS_DEV ) {
         // find by id and update

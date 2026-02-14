@@ -1,21 +1,12 @@
 import { apiClient } from "@/config/ApiClient";
 import { ENV } from "@/config/env";
-import LoginResponse from "@/model/LoginResponse";
+
 import localAuthStore from "@/store/authStore";
 import { mockResponse } from "./mock";
-import { encryptPasswordAES, encryptWrapKey, fetchPublicKey, generateAesSymmetricKey } from "@/util/encryption";
-import LoginRequest from "@/model/LoginRequest";
+import { encryptPasswordAES, encryptWrapKey, fetchPublicKey, generateAesSymmetricKey, toBase64 } from "@/util/encryption";
 
 import {API_ENDPOINTS} from '@/shared/constants';
-
-
-export function toBase64(data: Uint8Array): string {
-  let binary = "";
-  for (let i = 0; i < data.length; i++) {
-    binary += String.fromCharCode(data[i]);
-  }
-  return btoa(binary);
-}
+import { LoginRequest, LoginResponse } from "@/shared/types";
 
 export async function logoutProc() : Promise<boolean> {
     let result : boolean = true;
