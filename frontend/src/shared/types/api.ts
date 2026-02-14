@@ -9,3 +9,12 @@ export interface ApiResponse<T> {
     success : boolean;
     message? : string;
 }
+
+export interface HttpApiError {
+    response?: {
+        data?: {
+            code?: string;
+            message?: string;
+        };
+    };
+}

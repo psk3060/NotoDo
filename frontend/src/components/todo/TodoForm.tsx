@@ -6,11 +6,14 @@ import { ErrorMessage, Field, Form, Formik } from "formik";
 import {useEffect, useState} from 'react';
 import moment from "moment";
 
-import { useAuth } from '@/components/auth/useAuth';
-import { useNumberParam } from '@/util/useNumberParam';
 import { createTodo, retrieveTodoById, updateTodo, withTokenCheck } from '@/service/TodoService';
-import { dateToString } from '@/util/useDateParam';
+
 import { TodoFormValues } from '@/shared/types';
+import { toKSTString } from '@/shared/utils/date';
+import { useNumberParam } from '@/shared/hooks/useUrlParams';
+
+import { useAuth } from '../auth/useAuth';
+
 
 
 export default function TodoForm() {
@@ -36,6 +39,7 @@ export default function TodoForm() {
   
   async function retriegveTodo() {
     if(id > 0) {
+
       await withTokenCheck(
                     () => retrieveTodoById(id)
                               .then(
@@ -49,6 +53,7 @@ export default function TodoForm() {
                               )
                     , logout
       )
+
     }
     else {
       // 정보는 없으므로, 강제 로그아웃은 시키지 않음 => 등록은 안 됨
@@ -58,7 +63,7 @@ export default function TodoForm() {
   }
   
 
-  let registDateStr = dateToString(registDate);
+  let registDateStr = toKSTString(registDate);
   
   function validate(values: TodoFormValues) {
 
@@ -81,18 +86,18 @@ export default function TodoForm() {
 
   async function onSubmit(values: TodoFormValues) {
     if( id === 0 ) {
+
       await withTokenCheck(
                     () => createTodo(values.title, values.status, values.deadline, values.description)
                                 .then(() => { moveListPage();})
                                 .catch((error) => console.error(error))
                     , logout
-      )
+      );
+
 
     }
     else {
       
-      
-
       await withTokenCheck(
         
                     () => updateTodo(id, {
@@ -106,8 +111,7 @@ export default function TodoForm() {
                               .then(() => { moveListPage();})
                               .catch((error) => console.error(error))
                     , logout
-      )
-
+      );
     }
   }
 

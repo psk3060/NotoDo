@@ -50,6 +50,6 @@ export const ERROR_CODES = {
     AUTH : {
         TOKEN_EXPIRED : 'expired',
         TOKEN_INVALID : 'invalid',
-        TOKEN_EMPTY : 'token_empty'
+        TOKEN_EMPTY : 'empty_token'
     }
 } as const;

@@ -1,5 +1,3 @@
-import { toast } from "react-toastify";
-
 import {API_ENDPOINTS, ERROR_CODES, TOAST_MESSAGES} from '@/shared/constants';
 import { ENV } from "@/config/env";
 import localTodoStore from "@/store/todoStore";
@@ -7,6 +5,8 @@ import { mockResponse } from "./mock";
 import { apiClient } from "@/config/ApiClient";
 
 import { Todo, UpdateTodoPayload } from "@/shared/types";
+import { getCurrentTimestamp } from "@/shared/utils/date";
+import { toast } from 'react-toastify';
 
 export async function retrieveAllTodos() {
     let result: any;
@@ -42,13 +42,8 @@ export async function retrieveTodoById(id: number) : Promise<Todo | undefined> {
 }
 
 export async function createTodo(title: string, status: string, deadline: string, description : string) {
-
-    let today = new Date();
-    let registDate = today.getFullYear() + "-"
-            + String(today.getMonth() + 1).padStart(2, '0') + "-"
-            + String(today.getDate()).padStart(2, '0') + " "
-            + String(today.getHours()).padStart(2, '0') + ":"
-            + String(today.getMinutes()).padStart(2, '0');
+    
+    let registDate = getCurrentTimestamp();
 
     if( ENV.IS_DEV ) {
         
@@ -121,12 +116,12 @@ export async function updateTodo(id: number, newTodo: UpdateTodoPayload) {
 
 }
 
-
 export async function withTokenCheck<T>(fn: () => Promise<T>, logout: () => void): Promise<T | undefined> {
     
     try {
         return await fn();
     } catch (error: any) {
+        
         const data = error.response?.data;
         if (!data) throw error;
 
