@@ -90,7 +90,7 @@ class RSAKeyManager :
             raise ValueError("RSA decrypt failed")
     
     # RSA Private Key로 AES 키 복호화 & AES-GCM으로 데이터 복호화
-    def decrypt_password_AES(self, loginRequest:LoginRequest) -> str:
+    async def decrypt_password_AES(self, loginRequest:LoginRequest) -> str:
         
         try :
             encrypted_aes_key_bytes = base64.b64decode(loginRequest.encryptedAESKey)
@@ -135,8 +135,3 @@ class RSAKeyManager :
 
 # 전역 변수(@asynccontextmanager에서 rsa_manager.init() 호출)
 rsa_manager = RSAKeyManager()
-
-
-
-
-# TODO JWT 토큰 생성

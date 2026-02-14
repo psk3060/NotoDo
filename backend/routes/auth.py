@@ -20,37 +20,31 @@ async def login_proc(loginRequest : LoginRequest, request: Request, response: Re
         3. Token 발급 정책
             - Access Token : 로그인 할 때마다 
             - Refresh Token : 갱신 하였을 경우
+        
     '''
     
     # TODO IP에서 5회 실패 했는가? (잠긴 상태인가?)
     authService = AuthServiceImpl()
     
-    # 메시지
     returnMsg : str = ""
     
-    # 평문으로 복호화
-    plain_password = rsa_manager.decrypt_password_AES(loginRequest)
-    
-    user_id = loginRequest.userId
-    
-    result = await authService.login(user_id, plain_password)
+    # 정보 검증
+    result = await authService.verifyLoginInfo(loginRequest)
     
     if result :
-        returnMsg = "로그인 성공"
+        await authService.saveToken(loginRequest.userId, response)
         
-        await authService.saveToken(user_id, request, response)
         
-        # TODO IP Redis 초기화
+        # TODO IP Redis 초기화(await 필요 없음)
     else :
-        # TODO IP에서 5회 실패 시 5분 잠금(Redis에서 카운트)
+        # TODO IP에서 5회 실패 시 5분 잠금(Redis에서 카운트, await 필요 없음)
         returnMsg = "아이디 또는 비밀번호를 찾을 수 없습니다."
 
     return LoginResponse(success = result, message = returnMsg)
 
-    
-    
+
 @router.get("/public-key", response_model=PublicKeyResponse)
-async def get_publicKey() -> str : 
+def get_publicKey() -> str : 
     '''Client에 RSA Public Key 전달'''
     
     return {
@@ -63,20 +57,24 @@ def logout(request : Request, response : Response):
     '''
         로그아웃 로직
             1. 사용자가 로그아웃 버튼 클릭
-            2. 쿠키에 담긴 accessToken으로 로그아웃 요청
-            3. 서버에서 Refresh Token 기준으로 세션 식별 →  Refresh Token revoke (Redis + PostgreSQL)
-            4. accessToken, refreshToken 쿠키 삭제
-            5. 프론트엔드에서 로그아웃 진행
+            2. Refresh Token revoke (Redis + PostgreSQL)
+            3. ACCESS_TOKEN, REFRESH_TOKEN 삭제
+            4. 프론트엔드에서 로그아웃 진행
     '''
     
-    authService = AuthServiceImpl()
-    authService.clear_auth_cookies(response)
+    refresh_token = request.cookies.get("refresh_token")
     
-    return True
+    if not refresh_token :
+        return JSONResponse(status_code=401,content={"code" : "empty_token", "message" : "토큰이 비어있습니다."})
+    
+    authService = AuthServiceImpl()
+    authService.deleteCookie(response)
+
+    return None
 
 @router.post("/refresh")
-async def refreshToken(request : Request, response: Response) :
-    '''Refresh Token 갱신(TODO)'''
+def refreshToken(request : Request, response: Response) :
+    '''Refresh Token 갱신'''
     
     refresh_token = request.cookies.get("refresh_token")
     
@@ -86,6 +84,6 @@ async def refreshToken(request : Request, response: Response) :
     
     authService = AuthServiceImpl()
     
-    await authService.renewal_refresh_token(refresh_token, request, response)
+    authService.reissue_refresh_token(refresh_token, response)
     
     return None

@@ -10,6 +10,10 @@ from dotenv import load_dotenv
 
 from core.security import rsa_manager
 
+from db.redis import redis_container
+
+import redis.asyncio as redis
+
 import os
 
 # .env 파일 로드
@@ -23,6 +27,16 @@ async def lifespan(app: FastAPI):
         f"@localhost:27017/{os.getenv('MONGO_DATABASE_NAME', '')}"
         f"?authMechanism=DEFAULT&authSource={os.getenv('MONGO_DATABASE_NAME', '')}"
     )
+    
+    # refresh token용 redis 컨테이너
+    redis_container.refresh = redis.Redis(
+        host="localhost", port=6379, db=0, decode_responses=True
+    )
+    
+    # TODO ip 관리용 redis 컨테이너 (db = 1)
+    
+    
+    # beanie
     await init_beanie(database=client.get_default_database(), document_models=[User])
     # MongoDB Client 생성
     
@@ -33,3 +47,4 @@ async def lifespan(app: FastAPI):
     yield
     
     client.close()
+    await redis_container.refresh.close()
