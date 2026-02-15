@@ -2,10 +2,12 @@ import "@/styles/bootstrap.scss";
 
 import '@fortawesome/fontawesome-svg-core/styles.css'
 import { config } from '@fortawesome/fontawesome-svg-core'
-
-import TodoApp from "./components/todo/TodoApp";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import Header from "@/shared/components/Header";
+import { routes } from "@/config/routes";
+
 config.autoAddCss = false
 
 function App() {
@@ -20,7 +22,14 @@ function App() {
           pauseOnHover
           draggable
         />
-        <TodoApp />
+        <BrowserRouter>
+          <Header />
+          <Routes>
+            {routes.map((route, index) => (
+              <Route key={index} {...route} />
+            ))}
+          </Routes>
+        </BrowserRouter>
       
     </>
   )
