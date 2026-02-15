@@ -1,5 +1,11 @@
+interface EnvConfig {
+  IS_DEV : boolean;
+  API_BASE_URL : string;
+}
+
+const mode = import.meta.env.MODE;
+
 export const ENV = {
-  PROFILE: import.meta.env.MODE ?? 'dev',
-  IS_DEV: (import.meta.env.MODE ?? 'dev') === 'dev',
-  IS_PROD: (import.meta.env.MODE ?? 'dev') === 'prod',
-} as const;
+  IS_DEV : mode === 'dev',
+  API_BASE_URL : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+} as EnvConfig;
