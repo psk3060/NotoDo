@@ -1,5 +1,6 @@
 export interface LoginRequest {
     userId: string;
+    password? : string;
     encryptedPassword?: string;
     encryptedAESKey?: string;
     iv?:string;

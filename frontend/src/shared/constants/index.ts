@@ -37,7 +37,10 @@ export const TODO_STATUS = {
 export const TOAST_MESSAGES = {
     AUTH : {
         LOGIN_REQUIRED : '재로그인이 필요합니다.',
-        INVALID_TOKEN : '토큰이 유효하지 않거나 비어 있습니다. 재로그인 해주세요.'
+        INVALID_TOKEN : '토큰이 유효하지 않거나 비어 있습니다. 재로그인 해주세요.',
+        LOGIN_ERROR : '로그인 처리 중 오류가 발생했습니다.',
+        LOGIN_FAIL : '로그인에 실패했습니다.',
+        INVALID_CREDENTIAL : '아이디 또는 비밀번호가 일치하지 않습니다.'
     },
     TODO : {
         CREATE_SUCCESS : 'Todo가 생성되었습니다.',

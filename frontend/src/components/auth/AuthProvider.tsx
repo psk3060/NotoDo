@@ -3,10 +3,11 @@ import { type ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
 
 import { toast } from "react-toastify";
-import localAuthStore from '@/store/authStore';
 
-import { loginProc, logoutProc } from '@/service/LoginService';
 import { LoginResponse } from '@/shared/types';
+import localAuthStore from '@/features/auth/stores/authStore';
+
+import * as authService from '@/features/auth/services/authService';
 
 type Props = {
     children: ReactNode;
@@ -18,22 +19,25 @@ export default function AuthProvider({ children }: Props) {
     
     async function login(userId:string, password:string) : Promise<LoginResponse> {
 
-        const response = await loginProc(userId, password);
-        let result = response.data;
-
-        if( response.data.success ) {
+        const response = await authService.login({userId, password});
+        
+        if(response.success) {
             authStore.setUserId(userId);
+            // TODO 
+            // authStore.setUserId(response.data.userId);
+            
         }
         else {
-            toast.error(response.data.message);
+            toast.error(response.message);
         }
-        authStore.setAuthenticated(response.data.success);
 
-        return result;
+        authStore.setAuthenticated(response.success);
+
+        return response;
     }
 
-    function logout() {
-        logoutProc();
+    async function logout() {
+        await authService.logout();
         authStore.clearAuth();
     }
 
