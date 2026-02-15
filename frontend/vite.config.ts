@@ -8,7 +8,7 @@ export default defineConfig({
   // @ Alias 설정
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   // Vite + Sass에서 Bootstrap 사용 시 경고 제거
