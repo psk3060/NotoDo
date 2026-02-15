@@ -36,8 +36,7 @@ export function useAuth() {
         [setUserId, setAuthenticated]
     );
     
-    const logout = useCallback(
-        async () => {
+    const logout = useCallback(async () => {
             try {
                 await authService.logout();
             }catch(error) {

@@ -1,24 +1,12 @@
-import TodoList from "./TodoList";
-import TodoForm from "./TodoForm";
-
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
-
-import { type PropsWithChildren } from "react";
-import localAuthStore from "@/store/authStore";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import AuthProvider from "@/components/auth/AuthProvider";
-import Header from "@/components/Header";
-import Login from "@/components/auth/Login";
 
-function AuthenticatedRoute({children}:PropsWithChildren) {
+import Header from "@/shared/components/Header";
+import ProtectedRoute from "@/shared/components/ProtectedRoute";
+import Login from "@/features/auth/components/Login";
+import TodoList from "@/features/todo/components/TodoList";
+import TodoForm from "@/features/todo/components/TodoForm";
 
-    const authStore = localAuthStore();
-    
-    if( authStore.isAuthenticated ) 
-        return children;
-
-    return <Navigate to="/" />;
-}
 
 export default function TodoApp() {
 
@@ -30,13 +18,13 @@ export default function TodoApp() {
                     <Route path='/' element={ <Login /> }></Route>
                     <Route path='/login' element={<Login />}></Route>
                     <Route path='/todos' element={
-                        <AuthenticatedRoute>
+                        <ProtectedRoute>
                             <TodoList />
-                        </AuthenticatedRoute>}></Route>
+                        </ProtectedRoute>}></Route>
                     <Route path='/todos/:id' element={
-                        <AuthenticatedRoute>
+                        <ProtectedRoute>
                             <TodoForm />
-                        </AuthenticatedRoute>}>
+                        </ProtectedRoute>}>
                     </Route>
                 </Routes>
             </BrowserRouter>

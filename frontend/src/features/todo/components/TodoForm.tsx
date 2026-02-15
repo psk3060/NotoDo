@@ -1,0 +1,189 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
+
+import { useNavigate } from 'react-router-dom';
+import { ErrorMessage, Field, Form, Formik } from "formik";
+
+import { TodoFormValues } from '@/shared/types';
+import { isValidDate, toKSTString } from '@/shared/utils/date';
+import { useNumberParam } from '@/shared/hooks/useUrlParams';
+
+import { useTodoDetail } from '../hooks/useTodo';
+import { ROUTES, TODO_STATUS } from '@/shared/constants';
+
+function validateTodoForm(values : TodoFormValues) {
+  const errors: Partial<Record<keyof TodoFormValues, string | Date>> = {};
+
+    if( !values.title.trim() ) {
+      errors.title = "title is required.";
+    }
+
+    if( values.deadline && !isValidDate(values.deadline) ) {
+      errors.deadline = "Enter a deadline date.";
+    }
+
+    return errors;
+}
+
+/**
+ * Todo 생성 / 수정 폼 컴포넌트
+ * @returns 
+ */
+export default function TodoForm() {
+
+  let navigate = useNavigate();
+  const id = useNumberParam('id');
+  const {todo, isLoading, createTodo, updateTodo} = useTodoDetail(id);
+  
+  const initialValues : TodoFormValues = {
+    title : todo?.title || '',
+    deadline : todo?.deadline || '',
+    registDate : todo?.registDate || toKSTString(new Date()),
+    status : todo?.status || TODO_STATUS.PENDING,
+    description : todo?.description || '',
+  }
+
+  const handleCancel = () => {
+    navigate(ROUTES.TODOS);
+  }
+  
+  const handleSubmit = async (values : TodoFormValues) => {
+    try {
+      if(id === 0) {
+        await createTodo({
+          title : values.title,
+          status : values.status,
+          deadline : values.deadline,
+          description : values.description
+        });
+      }
+      else {
+        await updateTodo({
+          id,
+          title : values.title,
+          status : values.status,
+          registDate : values.registDate,
+          deadline : values.deadline,
+          description : values.description
+        });
+      }
+    }
+    catch(error) {
+      console.error('Form submission error : ', error);
+    }
+  }
+
+  if ( isLoading ) {
+    return (
+      <div className='container text-center mt-5'>
+        <div className='spinner-border' role='status'>
+          <span className='visually-hidden'>Loading...</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container">
+      <h2 className="text-center my-4">{id === 0 ? 'Create Todo' : 'Edit Todo'}</h2>
+
+      <Formik<TodoFormValues>
+        initialValues={initialValues}
+        enableReinitialize={true}
+        onSubmit={handleSubmit}
+        validate={validateTodoForm}  
+        validateOnChange={false}
+        validateOnBlur={false}
+      >
+        {({isSubmitting}) => (
+          <Form>
+            <ErrorMessage 
+              name="title" 
+              component="div" 
+              className="alert alert-warning" 
+            />
+            <ErrorMessage 
+              name="deadline" 
+              component="div" 
+              className="alert alert-warning" 
+            />
+            <ErrorMessage 
+              name="status" 
+              component="div" 
+              className="alert alert-warning" 
+            />
+            
+            <fieldset className="form-group">
+              <label htmlFor="todoTitle">Todo Title</label>
+              <Field 
+                type="text" 
+                className="form-control" 
+                id="todoTitle" 
+                name="title" 
+                placeholder="Enter todo title" />
+            </fieldset>
+            <fieldset className="form-group">
+              <label htmlFor="todoDeadline">Todo Deadline</label>
+              <Field 
+                type="date" 
+                className="form-control" 
+                id="todoDeadline" 
+                name="deadline" 
+                placeholder="Enter todo deadline" />
+            </fieldset>
+
+            <fieldset className="form-group">
+              <label htmlFor="todoStatus">Todo Status</label>
+              <Field as="select" className="form-control" id="todoStatus" name="status">
+                <option value={TODO_STATUS.PENDING}>{TODO_STATUS.PENDING}</option>
+                <option value={TODO_STATUS.IN_PROGRESS}>{TODO_STATUS.IN_PROGRESS}</option>
+                <option value={TODO_STATUS.COMPLETED}>{TODO_STATUS.COMPLETED}</option>
+              </Field>
+            </fieldset>
+
+            <fieldset className="form-group">
+              <label htmlFor="todoDeadline">Todo Regist Date</label>
+              <Field 
+                type="text" 
+                className="form-control" 
+                id="todoRegDate" 
+                name="registDate" 
+                readOnly />
+            </fieldset>
+          
+            <fieldset className="form-group">   
+              <label htmlFor="todoDescription">Todo Description</label>
+              <Field 
+                as="textarea" 
+                className="form-control" 
+                id="todoDescription" 
+                name="description" 
+                rows={3} 
+                placeholder="Enter todo description" />
+            </fieldset>
+            
+            <div className="text-end mt-4 me-3">
+              <button 
+                type="submit" 
+                className="btn btn-primary me-2" 
+                disabled={isSubmitting}>
+                  <FontAwesomeIcon icon={faSave} /> Save Todo
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-outline-secondary" 
+                onClick={handleCancel} 
+                disabled={isSubmitting}>
+                  <FontAwesomeIcon icon={faListOl} /> List Todo
+              </button>
+            </div>
+
+          </Form>
+        )}
+
+      </Formik>
+
+    </div>
+
+  );
+}

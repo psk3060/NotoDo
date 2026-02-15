@@ -46,6 +46,11 @@ export const TOAST_MESSAGES = {
         CREATE_SUCCESS : 'Todo가 생성되었습니다.',
         UPDATE_SUCCESS : 'Todo가 수정되었습니다.',
         DELETE_SUCCESS : 'Todo가 삭제되었습니다.',
+        FETCH_ALL_FAIL : 'Todo 목록을 불러오는데 실패했습니다.',
+        DELETE_FAIL : 'Todo 삭제에 실패했습니다.',
+        FETCH_FAIL : 'Todo를 불러오는데 실패했습니다.',
+        CREATE_FAIL : 'Todo 생성에 실패했습니다.',
+        UPDATE_FAIL : 'Todo 수정에 실패했습니다.',
     }
 } as const;
 

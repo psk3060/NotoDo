@@ -23,4 +23,11 @@ export interface TodoFormValues {
     description : string;
 }
 
+export interface CreateTodoPayload {
+  title: string;
+  status: string;
+  deadline: string;
+  description: string;
+}
+
 export interface UpdateTodoPayload extends Todo {}
