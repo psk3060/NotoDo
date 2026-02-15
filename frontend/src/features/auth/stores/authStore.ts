@@ -2,19 +2,18 @@ import {create} from 'zustand';
 import {createJSONStorage, persist} from 'zustand/middleware';
 
 import {STORAGE_KEYS} from '@/shared/constants'
-import { AuthStore } from '@/shared/types';
+import { AuthStore } from '@/shared/types/auth';
 
-const localAuthStore = create<AuthStore>()(
+export const authStore = create<AuthStore>()(
     persist(
-        (set, _) => ({
+        (set) => ({
             userId: null,
-            // Front Display 위한 변수(제거하지 않기)
-            isAuthenticated : true,
+            isAuthenticated : false,
             setUserId : (userId : string) => {
-                set(_ => ({userId}))
+                set({userId})
             },
             setAuthenticated : (isAuthenticated : boolean) => {
-                set(_ => ({isAuthenticated}))
+                set({isAuthenticated})
             },
             clearAuth : () => set({
                 userId : null,
@@ -28,5 +27,3 @@ const localAuthStore = create<AuthStore>()(
         }
     )
 );
-
-export default localAuthStore;

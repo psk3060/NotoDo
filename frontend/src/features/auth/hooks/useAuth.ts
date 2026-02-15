@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import authStore from "@/features/auth/stores/authStore";
+import {authStore} from "@/features/auth/stores/authStore";
 import { useCallback } from "react";
 import { toast } from "react-toastify";
 import { ROUTES, TOAST_MESSAGES } from "@/shared/constants";
