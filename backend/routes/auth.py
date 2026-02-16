@@ -1,10 +1,14 @@
 # routes/auth.py
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import JSONResponse
+
+from db.postgre_session import get_db
 
 from model import LoginRequest, LoginResponse, PublicKeyResponse
 from service.impl import AuthServiceImpl
 from core.security import rsa_manager
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(
     prefix="/auth",
@@ -12,7 +16,7 @@ router = APIRouter(
 )
 
 @router.post("/login", response_model=LoginResponse)
-async def login_proc(loginRequest : LoginRequest, request: Request, response: Response) :
+async def login_proc(loginRequest : LoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)) :
     
     '''Login 처리 메소드
         1. IP 체크(5회) - 잠김 여부 파악(Redis TODO)
@@ -29,7 +33,7 @@ async def login_proc(loginRequest : LoginRequest, request: Request, response: Re
     returnMsg : str = ""
     
     # 정보 검증
-    result = await authService.verifyLoginInfo(loginRequest)
+    result = await authService.verifyLoginInfo(loginRequest, db)
     
     if result :
         await authService.saveToken(loginRequest.userId, response)

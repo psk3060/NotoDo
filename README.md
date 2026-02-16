@@ -6,7 +6,7 @@
 
 ### Backend
 - **Language**: Python 3.11
-- **Framework**: FastAPI, Beanie(파이썬 ORM)
+- **Framework**: FastAPI, Beanie, SQLAlchemy
 - **Server**: Uvicorn (ASGI)
 - **Validation**: Pydantic
 - **Authentication**: OAuth2 Bearer Token (JWT) - 하이브리드 보관
@@ -20,9 +20,9 @@
 - **Tooling**: ESLint, Prettier
 
 ### Database(Docker에서 실행)
-- PostgreSQL : 사용자, Refresh Token(이력 확인, 권한 회수 대상 식별 / 블랙리스트 관리)
+- PostgreSQL(SQLAlchemy) : 사용자, Refresh Token(이력 확인, 권한 회수 대상 식별 / 블랙리스트 관리)
 - Redis : IP(접근 권한), Refresh Token(Refresh Token 유효성)
-- MongoDB : 로그인 시도 이력(성공 / 실패), 기능 접근 이력(성공 / 실패)
+- MongoDB(Beanie) : 로그인 시도 이력(성공 / 실패), 기능 접근 이력(성공 / 실패)
 
 ## TODO
 - [X] 프로젝트 Init
@@ -35,7 +35,8 @@
 - [X] 서버 연동 : 비밀번호 하이브리드 암복호화(RSA + AES)
 - [X] 서버 연동 : 사용자 인증 JWT 이용(Redis 연동)
 - [X] 프론트엔드 : 리팩토링(프론트엔드 완료)
-- [ ] 서버 DB 변경 : PostgreSQL으로 DB 마이그레이션
+- [X] 서버 DB 변경 : PostgreSQL으로 DB 마이그레이션
+- [ ] 서버 연동 : Access Token 재발급 로깅(MongoDB), IP 체크(Redis)
 - [ ] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
 - [ ] Notion 연동 : 댓글 기능 추가
 - [ ] Notion 연동 : 필터링(상태별, 날짜별, 제목 + 내용 검색) 추가
