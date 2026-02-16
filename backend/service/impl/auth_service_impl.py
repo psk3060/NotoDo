@@ -12,6 +12,8 @@ from db.redis import redis_container
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+def get_auth_service() :
+    return AuthServiceImpl()
 
 class AuthServiceImpl(BaseModel) : 
     

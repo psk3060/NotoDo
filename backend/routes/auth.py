@@ -1,4 +1,6 @@
 # routes/auth.py
+from service.impl.ip_service import IpService
+from service.impl.ip_service import get_ip_service
 from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import JSONResponse
 
@@ -10,13 +12,20 @@ from core.security import rsa_manager
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from db.redis import redis_container
+
 router = APIRouter(
     prefix="/auth",
     tags=["auth"]
 )
 
 @router.post("/login", response_model=LoginResponse)
-async def login_proc(loginRequest : LoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)) :
+async def login_proc(
+                        loginRequest : LoginRequest
+                        , request: Request
+                        , response: Response
+                        , db: AsyncSession = Depends(get_db)
+                        , ip_service : IpService = Depends(get_ip_service)) :
     
     '''Login 처리 메소드
         1. IP 체크(5회) - 잠김 여부 파악(Redis TODO)
@@ -27,22 +36,36 @@ async def login_proc(loginRequest : LoginRequest, request: Request, response: Re
         
     '''
     
-    # TODO IP에서 5회 실패 했는가? (잠긴 상태인가?)
-    authService = AuthServiceImpl()
-    
     returnMsg : str = ""
     
-    # 정보 검증
-    result = await authService.verifyLoginInfo(loginRequest, db)
+    ip = ip_service.get_ip_info(request)['client_ip']
     
-    if result :
-        await authService.saveToken(loginRequest.userId, response)
-        
-        
-        # TODO IP Redis 초기화(await 필요 없음)
-    else :
-        # TODO IP에서 5회 실패 시 5분 잠금(Redis에서 카운트, await 필요 없음)
+    print(await ip_service.debug_fail_by_ip(ip))
+    
+    if await ip_service.exists_block_ip(ip):
         returnMsg = "아이디 또는 비밀번호를 찾을 수 없습니다."
+    else :
+        authService = AuthServiceImpl()
+        
+        # 정보 검증
+        result = await authService.verifyLoginInfo(loginRequest, db)
+        
+        if result :
+            await authService.saveToken(loginRequest.userId, response)
+            
+            # IP COUNT 초기화 - 성공 시
+            await ip_service.delete_all_fail_ip(ip)
+            
+        else :
+            # IP COUNT 1회 증가
+            count = await ip_service.add_fail_ip(ip, loginRequest.userId)
+            
+            # IP에서 1분 동안 5회 실패 시 BLOCK IP에 등록(TTL : 5분) -> COUNT_IP 모두 제거
+            if count is not None and count >= 5:
+                await ip_service.block_ip(ip)
+            
+            
+            returnMsg = "아이디 또는 비밀번호를 찾을 수 없습니다."
 
     return LoginResponse(success = result, message = returnMsg)
 
