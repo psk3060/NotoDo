@@ -1,5 +1,4 @@
-from beanie import init_beanie, Document
-from pymongo import AsyncMongoClient
+from beanie import Document
 
 class User(Document):
     userId : str

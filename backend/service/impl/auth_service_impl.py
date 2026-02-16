@@ -1,6 +1,6 @@
+from model.PostUser import User
 from pydantic import BaseModel
 from core.security import verify_password
-from db.mongo import User
 import os, jwt, uuid, json, hashlib
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Response
@@ -9,15 +9,22 @@ from core.security import rsa_manager
 
 from db.redis import redis_container
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
 class AuthServiceImpl(BaseModel) : 
     
-    async def verifyLoginInfo(self, loginRequest : LoginRequest) -> bool:
+    async def verifyLoginInfo(self, loginRequest : LoginRequest, db: AsyncSession) -> bool:
         '''
             회원 정보 검증
                 - ID(정보 검색)
                 - PASSWORD
         '''
-        user = await User.find_one(User.userId == loginRequest.userId)
+        result = await db.execute(
+            select(User).where(User.userId == loginRequest.userId)
+        )
+        user = result.scalar_one_or_none()
         
         if not user:
             raise ValueError("User not found in DB")
