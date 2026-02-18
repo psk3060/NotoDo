@@ -17,7 +17,6 @@ import redis.asyncio as redis
 from db.postgre_engine import engine, Base
 
 import os
-import model.PostUser  # 모델 로드 중요
 
 # .env 파일 로드
 load_dotenv()

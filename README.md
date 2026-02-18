@@ -20,9 +20,9 @@
 - **Tooling**: ESLint, Prettier
 
 ### Database(Docker에서 실행)
-- PostgreSQL(SQLAlchemy) : 사용자, Refresh Token(이력 확인, 권한 회수 대상 식별 / 블랙리스트 관리)
-- Redis : IP(접근 권한), Refresh Token(Refresh Token 유효성)
-- MongoDB(Beanie) : 로그인 시도 이력(성공 / 실패), 기능 접근 이력(성공 / 실패)
+- PostgreSQL(SQLAlchemy) : 사용자, 사용자 보안 정책(토큰 정책)
+- Redis : IP(접근 권한), Refresh Token(Refresh Token Active)
+- MongoDB(Beanie) : Refresh Token 발급 이력, 로그인 시도 이력(성공 / 실패), 기능 접근 이력(성공 / 실패)
 
 ## TODO
 - [X] 프로젝트 Init
