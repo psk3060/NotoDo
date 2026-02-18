@@ -254,8 +254,6 @@ class AuthServiceImpl(BaseModel) :
             if stored_hash != token_hash:
                 raise Exception("Refresh Token이 일치하지 않습니다.")
             
-            print(token_hash)
-            
             user_id = payload.get("user_id")
             
             tokens = await RefreshTokenLog.find(
