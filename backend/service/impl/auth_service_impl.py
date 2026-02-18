@@ -1,9 +1,9 @@
-from model.PostUser import User
+from model import RefreshTokenLog, PostUser
 from pydantic import BaseModel
 from core.security import verify_password
 import os, jwt, uuid, json, hashlib
 from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, Request
 from model import LoginRequest
 from core.security import rsa_manager
 
@@ -12,6 +12,8 @@ from db.redis import redis_container
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+def get_auth_service() :
+    return AuthServiceImpl()
 
 class AuthServiceImpl(BaseModel) : 
     
@@ -22,7 +24,7 @@ class AuthServiceImpl(BaseModel) :
                 - PASSWORD
         '''
         result = await db.execute(
-            select(User).where(User.userId == loginRequest.userId)
+            select(PostUser).where(PostUser.userId == loginRequest.userId)
         )
         user = result.scalar_one_or_none()
         
@@ -32,17 +34,6 @@ class AuthServiceImpl(BaseModel) :
         plain_password = await rsa_manager.decrypt_password_AES(loginRequest)
         
         return verify_password(plain_password, user.password)
-    
-    
-    def deleteCookie(self, response: Response) :
-        '''Token 삭제
-                - 삭제 기준 : 로그아웃 할 때마다'''
-                
-        # 쿠키 삭제
-        response.delete_cookie("access_token", path="/")
-        response.delete_cookie("refresh_token", path="/auth")
-        
-        
     
     
     def generateToken(self, user_id : str, token_type : str, SECRET_KEY : str, TOKEN_ALGORITHM : str, response : Response) -> str:
@@ -104,7 +95,8 @@ class AuthServiceImpl(BaseModel) :
             path=token_path
         )
     
-    async def saveToken(self, user_id : str, response : Response) :
+    
+    async def saveToken(self, user_id : str, issued_type : str, request : Request, response : Response) :
         ''' Token 생성
             1. 생성 기준
                 - 로그인 할 때마다
@@ -135,20 +127,28 @@ class AuthServiceImpl(BaseModel) :
         
         user_id = refresh_payload['user_id']
         
-        # 3. 기존 Refresh 삭제
-        await self.delete_user_refresh_tokens(user_id)
-        
-        # 4. Redis에 저장
+        # 3. Redis에 저장
         token_hash = self.hash_jwt(refresh_token)
         key = f"refresh:{user_id}:{refresh_payload['jti']}"
         
         await redis_container.refresh.set(key, token_hash, ex=60*60*24*7)
         
-        # 5. Access Token 생성
+        # 4. Access Token 생성
         access_token = self.generateToken(user_id, 'access', os.getenv('ACCESS_TOKEN_SECRET_KEY', ''), TOKEN_ALGORITHM, response)
         
         if not access_token:
             raise RuntimeError("Access Token이 생성되지 않았습니다.")
+        
+        # 5. refresh_token 이력 저장
+        await self.log_refresh_issue(user_id
+                                    , token_hash
+                                    , refresh_payload['jti']
+                                    , datetime.fromtimestamp(refresh_payload["iat"])
+                                    , datetime.fromtimestamp(refresh_payload["exp"])
+                                    , ip=request.client.host if request else None
+                                    , user_agent=request.headers.get("user-agent") if request else None
+                                    , issued_type=issued_type
+        )
         
         # 6. Access Token, Refresh Token 쿠키에 저장
         self.saveCookie('access', access_token, response)
@@ -156,7 +156,7 @@ class AuthServiceImpl(BaseModel) :
         
         return None
     
-    async def delete_user_refresh_tokens(self, user_id: str):
+    async def revoke_user_refresh_tokens(self, user_id: str):
         pattern = f"refresh:{user_id}:*"
         cursor = 0
         keys_to_delete = []
@@ -171,6 +171,20 @@ class AuthServiceImpl(BaseModel) :
 
         if keys_to_delete:
             await redis_container.refresh.delete(*keys_to_delete)
+            
+            
+        tokens = await RefreshTokenLog.find(
+            RefreshTokenLog.user_id == user_id,
+            RefreshTokenLog.revoked == False
+        ).to_list()
+        
+        now = datetime.now()
+        
+        for t in tokens:
+            t.revoked = True
+            t.revoked_at = now
+            t.revoked_reason = 'login'
+            await t.save()
     
     
     
@@ -202,8 +216,69 @@ class AuthServiceImpl(BaseModel) :
             raise e
             
     
+    def deleteCookie(self, response: Response) :
+        '''Token 삭제
+                - 삭제 기준 : 로그아웃 할 때마다'''
+                
+        # 쿠키 삭제
+        response.delete_cookie("access_token", path="/")
+        response.delete_cookie("refresh_token", path="/auth")
     
-    async def reissue_refresh_token(self, refresh_token : str, response : Response) :
+    
+    # Refresh 토큰 revoke
+    async def revoke_refresh_token(self, refresh_token : str, request : Request, response : Response):
+        SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')
+        TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
+        
+        try :
+            if not SECRET_KEY:
+                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
+            
+            if not TOKEN_ALGORITHM:
+                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
+            
+            token_hash = self.hash_jwt(refresh_token)
+            
+            payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
+
+            key = f"refresh:{payload['user_id']}:{payload['jti']}"
+            
+            stored_hash = await redis_container.refresh.get(key)
+            
+            if stored_hash is None:
+                raise Exception("Refresh Token이 존재하지 않습니다.")
+
+            if isinstance(stored_hash, bytes):
+                stored_hash = stored_hash.decode()
+
+            if stored_hash != token_hash:
+                raise Exception("Refresh Token이 일치하지 않습니다.")
+            
+            print(token_hash)
+            
+            user_id = payload.get("user_id")
+            
+            tokens = await RefreshTokenLog.find(
+                RefreshTokenLog.user_id == user_id,
+                RefreshTokenLog.token_hash == token_hash,
+                RefreshTokenLog.jti == payload['jti'],
+                RefreshTokenLog.revoked == False
+            ).to_list()
+            
+            now = datetime.now()
+            
+            for t in tokens:
+                t.revoked = True
+                t.revoked_at = now
+                t.revoked_reason = 'logout'
+                await t.save()
+            
+        except Exception as e:
+            print(e)
+        
+    
+    
+    async def reissue_refresh_token(self, refresh_token : str, request : Request, response : Response) :
         
         SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')
         TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
@@ -226,14 +301,58 @@ class AuthServiceImpl(BaseModel) :
             if stored_hash is None:
                 raise Exception("Refresh Token이 존재하지 않습니다.")
 
-            if stored_hash.decode() != token_hash:
+            if isinstance(stored_hash, bytes):
+                stored_hash = stored_hash.decode()
+
+            if stored_hash != token_hash:
                 raise Exception("Refresh Token이 일치하지 않습니다.")
             
             user_id = payload.get("user_id")
             
+            tokens = await RefreshTokenLog.find(
+                RefreshTokenLog.user_id == user_id,
+                RefreshTokenLog.token_hash == token_hash,
+                RefreshTokenLog.jti == payload['jti'],
+                RefreshTokenLog.revoked == False
+            ).to_list()
+            
+            now = datetime.now()
+            
+            for t in tokens:
+                t.revoked = True
+                t.revoked_at = now
+                t.revoked_reason = 'refresh'
+                await t.save()
+            
+            
             # 토큰 발급(DB, Redis, 쿠키에 저장하는 로직도 있기 때문에 saveToken)
-            await self.saveToken(user_id, response)
+            await self.saveToken(user_id, 'refresh', request, response)
             
         except Exception as e:
             raise e
         
+        
+    async def log_refresh_issue(
+        self,
+        user_id: str,
+        token_hash: str,
+        jti: str,
+        issued_at: datetime,
+        expires_at: datetime,
+        ip: str | None,
+        user_agent: str | None,
+        issued_type: str
+    ):
+        doc = RefreshTokenLog(
+            user_id=user_id,
+            token_hash=token_hash,
+            jti=jti,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            revoked=False,
+            ip=ip,
+            user_agent=user_agent,
+            issued_type=issued_type
+        )
+
+        await doc.insert()
