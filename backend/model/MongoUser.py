@@ -1,14 +1,14 @@
 from beanie import Document
 
-class User(Document):
+class MongoUser(Document):
     userId : str
     userName : str
     password : str
 
     class Settings:
-        name = "user"
+        name = "users"
     
 
-def selectById(userId:str) -> User:
-    findresult = User.find(userId)
+def selectById(userId:str) -> MongoUser:
+    findresult = MongoUser.find(userId)
     return findresult

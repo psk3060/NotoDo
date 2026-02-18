@@ -82,8 +82,12 @@ class IpService :
         return stats
     
     
-    
+    # 실패 IP 등록
     async def add_fail_ip(self, ip:str, user_id : str) -> int:
+        '''실패 IP 등록
+            - 회원ID 수집을 위해 zset 사용
+        '''
+        
         now = int(time.time())
         key = f"fail_ip:{ip}"
         
@@ -98,15 +102,19 @@ class IpService :
         
         return count
     
+    
+    # 순서 보장을 위한 Lua 스크립트
     BLOCK_IP_LUA = """
     redis.call("SET", KEYS[1], 1, "EX", ARGV[1])
     redis.call("DEL", KEYS[2])
     return 1
     """
     
-    
-    
     async def block_ip(self, ip : str) :
+        '''IP 차단(LuaScript)
+            1) 블록_IP 등록
+            2) FAIL_IP 모두 삭제
+        '''
         block_key = f"block_ip:{ip}"
         fail_key = f"fail_ip:{ip}"
         ttl = 3600  # 1시간 차단
@@ -114,3 +122,4 @@ class IpService :
         block_ip_script = redis_container.ip.register_script(self.BLOCK_IP_LUA)
         
         await block_ip_script(keys=[block_key, fail_key], args=[ttl])
+        

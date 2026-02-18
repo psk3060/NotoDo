@@ -1,9 +1,10 @@
+from model import RefreshTokenLog
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 
 # mongodb
-# from beanie import init_beanie
-# from pymongo import AsyncMongoClient
+from beanie import init_beanie
+from pymongo import AsyncMongoClient
 
 from dotenv import load_dotenv
 
@@ -25,13 +26,13 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # MongoDB Client 생성
     
-    # client = AsyncMongoClient(
-    #     f"mongodb://{os.getenv('MONGO_DATABASE_USER', '')}:{os.getenv('MONGO_DATABASE_PASSWORD', '')}"
-    #     f"@localhost:27017/{os.getenv('MONGO_DATABASE_NAME', '')}"
-    #     f"?authMechanism=DEFAULT&authSource={os.getenv('MONGO_DATABASE_NAME', '')}"
-    # )
+    client = AsyncMongoClient(
+        f"mongodb://{os.getenv('MONGO_DATABASE_USER', '')}:{os.getenv('MONGO_DATABASE_PASSWORD', '')}"
+        f"@localhost:27017/{os.getenv('MONGO_DATABASE_NAME', '')}"
+        f"?authMechanism=DEFAULT&authSource={os.getenv('MONGO_DATABASE_NAME', '')}"
+    )
     
-    # await init_beanie(database=client.get_default_database(), document_models=[User])
+    await init_beanie(database=client.get_default_database(), document_models=[RefreshTokenLog])
     # MongoDB Client 생성
     
     # refresh token용 redis 컨테이너

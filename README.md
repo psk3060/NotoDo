@@ -36,7 +36,7 @@
 - [X] 서버 연동 : 사용자 인증 JWT 이용(Redis 연동)
 - [X] 프론트엔드 : 리팩토링(프론트엔드 완료)
 - [X] 서버 DB 변경 : PostgreSQL으로 DB 마이그레이션
-- [ ] 서버 연동 : Access Token 재발급 로깅(MongoDB), IP 체크(Redis)
+- [X] 서버 연동 : Access Token 재발급 로깅(MongoDB), IP 체크(Redis)
 - [ ] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
 - [ ] Notion 연동 : 댓글 기능 추가
 - [ ] Notion 연동 : 필터링(상태별, 날짜별, 제목 + 내용 검색) 추가
