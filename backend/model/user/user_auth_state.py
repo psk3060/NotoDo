@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, DateTime
 from datetime import datetime
-from db.postgre_engine import Base
+from config.postgre_setup import Base
 
 class UserAuthState(Base):
     __tablename__ = "user_auth_state"

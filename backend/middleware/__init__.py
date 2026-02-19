@@ -1,3 +1,3 @@
-from .JWTMiddleware import JWTMiddleware
+from .jwt_middleware import JWTMiddleware
 
 __all__ = ['JWTMiddleware']

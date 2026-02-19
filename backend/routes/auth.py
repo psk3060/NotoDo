@@ -1,14 +1,14 @@
 # routes/auth.py
-from service.impl.auth_service_impl import get_auth_service
-from service.impl.ip_service import IpService
-from service.impl.ip_service import get_ip_service
+
 from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import JSONResponse
 
-from db.postgre_session import get_db
+from config.postgre_setup import get_db
 
 from model import LoginRequest, LoginResponse, PublicKeyResponse
-from service.impl import AuthServiceImpl
+from service import AuthServiceImpl, get_auth_service
+from service import IpService, get_ip_service
+
 from core.security import rsa_manager
 
 from sqlalchemy.ext.asyncio import AsyncSession

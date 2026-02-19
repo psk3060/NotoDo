@@ -1,3 +1,5 @@
+import os
+
 from model import RefreshTokenLog
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -10,13 +12,14 @@ from dotenv import load_dotenv
 
 from core.security import rsa_manager
 
-from db.redis import redis_container
-
 import redis.asyncio as redis
 
-from db.postgre_engine import engine, Base
+from config.redis_setup import redis_container
+from config.postgre_setup import engine, Base
 
-import os
+from service.notion_service_impl import NotionServiceImpl
+
+
 
 # .env 파일 로드
 load_dotenv()
@@ -51,13 +54,20 @@ async def lifespan(app: FastAPI):
     
     # Postgre 테이블 생성
     
-    
     # RSA Key Pair 생성
     rsa_manager.init()
     # RSA Key Pair 생성
     
+    # Notion 연동
+    if os.getenv('TODO_ENV', 'local') == 'prod':
+        notion_service = NotionServiceImpl()
+        # Retrieve a database에서 DATABASE_ID 입력하여, data_sources 목록 조회
+        await notion_service.retrieve_database()
+
     yield
     
     # client.close()
     await redis_container.refresh.close()
     await redis_container.ip.close()
+    if os.getenv('TODO_ENV', 'local') == 'prod':
+        await notion_service.close()

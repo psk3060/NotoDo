@@ -2,9 +2,9 @@ from datetime import datetime
 
 from sqlalchemy import String, DateTime, Boolean, Integer
 from sqlalchemy.orm import Mapped, mapped_column
-from db.postgre_engine import Base
+from config.postgre_setup import Base
 
-class PostUser(Base):
+class UserInfo(Base):
     __tablename__ = "users"
 
     userId : Mapped[str] = mapped_column("user_id", String(36), primary_key=True)

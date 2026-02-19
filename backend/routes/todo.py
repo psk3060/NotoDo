@@ -1,9 +1,10 @@
 # backend/routes/todo.py
 from fastapi import APIRouter, Request
 
-from model.Todo import Todo
-from model.TodoUpdate import TodoUpdate
-from service.ServiceFactory import get_todo_service
+from model import Todo
+from model import TodoUpdate
+from service.service_factory import get_todo_service
+
 
 import os
 
@@ -18,8 +19,8 @@ ENVIRONMENT = os.getenv("TODO_ENV", "local")
 todo_service = get_todo_service(ENVIRONMENT)
 
 @router.get("")
-def read_todos(request: Request):
-    return todo_service.read_todos(request.state.user)
+async def read_todos(request: Request):
+    return await todo_service.read_todos(request.state.user)
 
 @router.get("/{todo_id}")
 def read_todo_detail(todo_id: int, request: Request):

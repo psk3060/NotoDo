@@ -1,14 +1,13 @@
-from service.TodoService import TodoService
-from model.Todo import Todo
-from model.TodoUpdate import TodoUpdate
+from service.todo_service import TodoService
+from model import Todo, TodoUpdate
 from typing import List
 
 class LocalTodoServiceImpl(TodoService):
     def __init__(self):
         self.todo_list = []
-        self.todo_list.append(Todo(id = 1, title = "Sample Todo", status = "Pending", registDate = "2025-02-06 17:30", deadline = "2025-02-10", description = "This is a sample", userId = "demo"))
-        self.todo_list.append(Todo(id = 2, title = "Another Todo", status = "Pending", registDate = "2025-02-06 18:00", deadline = "2025-02-14", description = "This is another sample", userId = "demo"))
-        self.todo_list.append(Todo(id = 3, title = "Yet Another Todo", status = "Pending", registDate = "2025-02-06 21:35", deadline = "2025-02-10", description = "This is yet another sample", userId = "demo"))
+        self.todo_list.append(Todo(id = "1", title = "Sample Todo", status = "Pending", registDate = "2025-02-06 17:30", deadline = "2025-02-10", description = "This is a sample", userId = "demo"))
+        self.todo_list.append(Todo(id = "2", title = "Another Todo", status = "Pending", registDate = "2025-02-06 18:00", deadline = "2025-02-14", description = "This is another sample", userId = "demo"))
+        self.todo_list.append(Todo(id = "3", title = "Yet Another Todo", status = "Pending", registDate = "2025-02-06 21:35", deadline = "2025-02-10", description = "This is yet another sample", userId = "demo"))
         
     def read_todos(self, user_id : str) -> List[Todo]:
         return [x for x in self.todo_list if x.userId == user_id]
@@ -30,10 +29,10 @@ class LocalTodoServiceImpl(TodoService):
         todo.id = maxId
         self.todo_list.append(todo)    
         
-    def delete_todo(self, todo_id :int, user_id : str) :
+    def delete_todo(self, todo_id :str, user_id : str) :
         self.todo_list.remove([x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0])
 
-    def update_todo(self, todo_id : int, todo_update: TodoUpdate, user_id:str) :
+    def update_todo(self, todo_id : str, todo_update: TodoUpdate, user_id:str) :
         
         todo_update.userId = user_id
         

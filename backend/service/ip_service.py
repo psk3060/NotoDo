@@ -1,5 +1,5 @@
 from fastapi import Request
-from db.redis import redis_container
+from config.redis_setup import redis_container
 
 import time
 import uuid

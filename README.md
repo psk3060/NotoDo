@@ -9,7 +9,7 @@
 - **Framework**: FastAPI, Beanie, SQLAlchemy
 - **Server**: Uvicorn (ASGI)
 - **Validation**: Pydantic
-- **Authentication**: OAuth2 Bearer Token (JWT) - 하이브리드 보관
+- **Authentication**: JWT Access/Refresh + RTR(Refresh Token Rotation) + Redis 세션 저장 + 토큰 폐기 추적 구조
 - **API**: RESTful API
 
 ### Frontend

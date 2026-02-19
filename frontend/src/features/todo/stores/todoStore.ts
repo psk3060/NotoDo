@@ -8,15 +8,15 @@ interface TodoStore {
     todos: Todo[];
     addTodo: (todo: Todo) => void;
     updateTodo : (todo: Todo) => void;
-    deleteById : (id: number) => void;
+    deleteById : (id: string) => void;
     selectAll : () => Todo[];
-    selectById: (id: number) => Todo | undefined;
+    selectById: (id: string) => Todo | undefined;
 }
 
 const initialValues: Todo[] = [
-    { id : 1, title : "Sample Todo", status : "Pending", registDate : "2025-02-06 17:30", deadline : "2025-02-10", description : "This is a sample"}
-    , { id : 2, title : "Another Todo", status : "Pending", registDate : "2025-02-06 18:00", deadline : "2025-02-14", description : "This is another sample"}
-    , { id : 3, title : "Yet Another Todo", status : "Pending", registDate : "2025-02-06 21:35", deadline : "2025-02-10", description : "This is yet another sample"}
+    { id : "1", title : "Sample Todo", status : "Pending", registDate : "2025-02-06 17:30", deadline : "2025-02-10", description : "This is a sample"}
+    , { id : "2", title : "Another Todo", status : "Pending", registDate : "2025-02-06 18:00", deadline : "2025-02-14", description : "This is another sample"}
+    , { id : "3", title : "Yet Another Todo", status : "Pending", registDate : "2025-02-06 21:35", deadline : "2025-02-10", description : "This is yet another sample"}
 ];
 
 /**
@@ -38,7 +38,7 @@ const localTodoStore = create<TodoStore>()(
                 }));
             },
             
-            deleteById : (id: number) => {
+            deleteById : (id: string) => {
                 set( (state) => ({ 
                     todos: state.todos.filter( (todo) => todo.id !== id ) 
                 }));
@@ -47,7 +47,7 @@ const localTodoStore = create<TodoStore>()(
                 return get().todos;
             },
 
-            selectById : (id:number) => {
+            selectById : (id:string) => {
                 return get().todos.find( (todo) => todo.id === id );
             }
         }),

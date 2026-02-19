@@ -34,7 +34,7 @@ export function useTodoList() {
 
     }, [executeWithAuth] );
 
-    const deleteTodo = useCallback(async(id : number) => {
+    const deleteTodo = useCallback(async(id : string) => {
         try {
             await executeWithAuth(() => todoService.deleteTodo(id));
             toast.success(TOAST_MESSAGES.TODO.DELETE_SUCCESS);
@@ -56,14 +56,14 @@ export function useTodoList() {
 
 }
 
-export function useTodoDetail(id : number) {
+export function useTodoDetail(id : string) {
     const [todo, setTodo] = useState<Todo | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const {executeWithAuth} = useApiWithAuth();
     const navigate = useNavigate();
 
     const fetchTodo = useCallback(async () => {
-        if(id === 0) {
+        if(id === '') {
             setTodo(null);
             return;
         }

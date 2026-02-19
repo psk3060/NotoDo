@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from model.Todo import Todo
-from model.TodoUpdate import TodoUpdate
+from model import Todo, TodoUpdate
 from typing import List
 
 class TodoService(ABC):

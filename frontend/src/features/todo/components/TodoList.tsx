@@ -10,7 +10,7 @@ export default function TodoList() {
     let navigate = useNavigate();
     const { todos, isLoading, deleteTodo } = useTodoList();
 
-    const handleEdit = (id : number) => {
+    const handleEdit = (id : string) => {
         navigate(`${ROUTES.TODOS}/${id}`);
     };
 
@@ -18,7 +18,7 @@ export default function TodoList() {
         navigate(`${ROUTES.TODOS}/0`);
     }
 
-    const deleteHandle = async (id : number) => {
+    const deleteHandle = async (id : string) => {
         if(confirm('정말 삭제하시겠습니까?')) {
             await deleteTodo(id);
         }

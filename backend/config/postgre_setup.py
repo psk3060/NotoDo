@@ -1,13 +1,16 @@
 import os
+
 from dotenv import load_dotenv
 
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.engine import URL
 
-
-
 load_dotenv()
+
+async def get_db() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
 
 DATABASE_URL = URL.create(
     drivername="postgresql+asyncpg",
