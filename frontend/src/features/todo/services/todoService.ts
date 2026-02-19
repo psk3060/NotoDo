@@ -4,6 +4,7 @@ import { getCurrentTimestamp } from "@/shared/utils/date";
 import { ENV } from "@/config/env";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { apiClient } from "@/config/apiClient";
+import {generateId} from "@/shared/utils/string";
 
 export async function getAllTodos() : Promise<Todo[]> {
     if(ENV.IS_DEV) {
@@ -38,7 +39,7 @@ export async function createTodo(payload : CreateTodoPayload) : Promise<void> {
     }
 
     const todoData = {
-        id : 0,
+        id : "",
         ...payload,
         registDate : getCurrentTimestamp(),
     };
@@ -66,10 +67,9 @@ function mockGetTodoById(id : string) : Todo | null {
 
 function mockCreateTodo(payload : CreateTodoPayload) : void {
     const store = todoStore.getState();
-    const maxId = store.todos.reduce((max, todo) => Math.max(max, todo.id), 0);
-
+    
     const newTodo : Todo = {
-        id : maxId + 1,
+        id: generateId(),
         ...payload,
         registDate : getCurrentTimestamp()
     };
