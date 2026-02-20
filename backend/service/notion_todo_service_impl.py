@@ -53,12 +53,15 @@ class NotionTodoServiceImpl(TodoService):
         return NotionTodoServiceImpl(notion_service)
     
     
-    # 모두 조회 TODO
+    # 모두 조회
     async def read_todos(self, user_id:str) -> List[Todo]:
         todos = []
 
         # 1. Data Source List에서 Query a data source 호출하여 page 목록(id) 조회 
         for source in notion_state.data_sources:
+            
+            print(source["id"])
+            
             pages = await self.notion_service.query_datasource(source["id"])
             
             for page in pages:
@@ -72,7 +75,7 @@ class NotionTodoServiceImpl(TodoService):
                     status = "In Progress"
                 elif self.get_select(props, "상태") == "3":
                     status = "Completed"
-                    
+                
                 todo = Todo(
                     id=page["id"],
                     title = self.get_text(props, "Name"),
@@ -86,13 +89,34 @@ class NotionTodoServiceImpl(TodoService):
         
         return todos
 
-    # 상세 조회 TODO
-    def read_todo_detail(self, todo_id: str, user_id:str) -> Todo: 
-        pass
+    # 상세 조회
+    async def read_todo_detail(self, todo_id: str, user_id:str) -> Todo: 
+        
+        page = await self.notion_service.retrieve_page(todo_id)
+        
+        props = page["properties"]
+        
+        if self.get_select(props, "상태") == "1":
+            status = "Pending"
+        elif self.get_select(props, "상태") == "2":
+            status = "In Progress"
+        elif self.get_select(props, "상태") == "3":
+            status = "Completed"
+        
+        todo = Todo(
+            id=page["id"],
+            title = self.get_text(props, "Name"),
+            description = self.get_text(props, "텍스트"),
+            status = status,
+            registDate = self.get_created_time(props, "작성일시"),
+            deadline = self.get_date(props, "마감일")
+        )
+        
+        return todo
 
     # 작업 추가 TODO
-    def create_todo(self, todo : Todo, user_id:str):
-        pass
+    async def create_todo(self, todo : Todo, user_id:str):
+        return await self.notion_service.create_page(todo)
         
     # 작업 삭제 TODO
     def delete_todo(self, todo_id :str, user_id:str) :

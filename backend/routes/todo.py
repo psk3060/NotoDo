@@ -23,8 +23,8 @@ async def read_todos(request: Request):
     return await todo_service.read_todos(request.state.user)
 
 @router.get("/{todo_id}")
-def read_todo_detail(todo_id: int, request: Request):
-    return todo_service.read_todo_detail(todo_id, request.state.user)
+async def read_todo_detail(todo_id: str, request: Request):
+    return await todo_service.read_todo_detail(todo_id, request.state.user)
     
 @router.post("")
 def create_todo(todo : Todo, request: Request):
@@ -32,9 +32,9 @@ def create_todo(todo : Todo, request: Request):
     return True
 
 @router.delete("/{todo_id}")
-def delete_todo(todo_id : int, request: Request) :
+def delete_todo(todo_id : str, request: Request) :
     todo_service.delete_todo(todo_id, request.state.user)
     
 @router.put("/{todo_id}")
-def update_todo(todo_id : int, todo_update: TodoUpdate, request: Request) :
+def update_todo(todo_id : str, todo_update: TodoUpdate, request: Request) :
     todo_service.update_todo(todo_id, todo_update, request.state.user)

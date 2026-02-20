@@ -1,3 +1,4 @@
+from model.todo.todo import Todo
 import os, httpx
 
 from dotenv import load_dotenv
@@ -62,9 +63,9 @@ class NotionServiceImpl:
             "result_type": "page"
         }
 
-        body = {}
+        
         if filter:
-            body["filter"] = filter
+            payload["filter"] = filter
             
         data = await self.post(url, payload)
         
@@ -75,3 +76,50 @@ class NotionServiceImpl:
             }
             for page in data["results"]
         ]
+        
+    async def retrieve_page(self, page_id : str) : 
+        
+        url = f"https://api.notion.com/v1/pages/{page_id}"
+        
+        data = await self.get(url)
+        
+        return {
+            "id": data["id"],
+            "properties": data["properties"]
+        }
+        
+    async def create_page(self, todo : Todo):
+        
+        url = "https://api.notion.com/v1/pages"
+
+        if todo.status == "Pending":
+            status = "1" 
+        elif todo.status == "In Progress":
+            status = "2"
+        elif todo.status == "Completed":
+            status = "3"
+    
+        payload = {
+            "parent": {
+                "data_source_id": "a488d6fa-7f7d-4628-96fd-2cbfffcb9dfa"
+            },
+            "properties": {
+                "상태": { "select": { "id": status } },
+                "텍스트": { "rich_text": [
+                        {
+                            "text": { "content": todo.description },
+                            "type": "text"
+                        }
+                    ] },
+                "마감일": {
+                    "date": { "start": todo.deadline },
+                    "type": "date"
+                },
+                "Name": { "title": [{ "text": { "content": todo.title } }] }
+            }
+        }
+        
+        response = await self.post(url, json=payload)
+
+        print(response.text)
+        
