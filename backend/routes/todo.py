@@ -1,5 +1,6 @@
 # backend/routes/todo.py
 from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse
 
 from model import Todo
 from model import TodoUpdate
@@ -22,13 +23,22 @@ todo_service = get_todo_service(ENVIRONMENT)
 async def read_todos(request: Request):
     return await todo_service.read_todos(request.state.user)
 
+@router.get("/create")
+async def create_todo(request: Request):
+    return None
+
 @router.get("/{todo_id}")
 async def read_todo_detail(todo_id: str, request: Request):
-    return await todo_service.read_todo_detail(todo_id, request.state.user)
+    todo = await todo_service.read_todo_detail(todo_id, request.state.user)
+
+    if todo is None:
+        return RedirectResponse("/todo/create", 307)
+
+    return todo
     
 @router.post("")
-def create_todo(todo : Todo, request: Request):
-    todo_service.create_todo(todo, request.state.user) 
+async def create_todo(todo : Todo, request: Request):
+    await todo_service.create_todo(todo, request.state.user) 
     return True
 
 @router.delete("/{todo_id}")

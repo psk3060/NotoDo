@@ -106,7 +106,7 @@ async def logout(request : Request
     return None
 
 @router.post("/refresh")
-def refreshToken(request : Request, response: Response
+async def refreshToken(request : Request, response: Response
                  , authService : AuthServiceImpl = Depends(get_auth_service)
                  ) :
     '''Refresh Token 갱신'''
@@ -116,6 +116,6 @@ def refreshToken(request : Request, response: Response
     if not refresh_token :
         return JSONResponse(status_code=401,content={"code" : "empty_token", "message" : "토큰이 비어있습니다."})
     
-    authService.reissue_refresh_token(refresh_token, response)
+    await authService.reissue_refresh_token(refresh_token, request, response)
     
     return None

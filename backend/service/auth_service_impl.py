@@ -41,7 +41,7 @@ class AuthServiceImpl(BaseModel) :
         TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
         
         if token_type == "access":
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15) # seconds=10
+            expire = datetime.now(timezone.utc) + timedelta(minutes=1) # minutes=15
         elif token_type == "refresh":
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         else :

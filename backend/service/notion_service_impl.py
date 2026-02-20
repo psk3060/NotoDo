@@ -1,15 +1,26 @@
 from model.todo.todo import Todo
 import os, httpx
-
+import re, uuid
 from dotenv import load_dotenv
 
 from model import NotionState, notion_state
+
+from httpx import HTTPStatusError
+
+import requests
 
 load_dotenv()
 
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 NOTION_VERSION = os.getenv("NOTION_VERSION")
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
+
+UUID_PATTERN = re.compile(r"^[0-9a-fA-F-]{32,36}$")
+
+def ensure_uuid(val: str) -> str:
+    if UUID_PATTERN.fullmatch(val):
+        return val
+    return str(uuid.uuid4())
 
 def get_notion_headers() -> dict:
     return {
@@ -49,6 +60,8 @@ class NotionServiceImpl:
         
         return notion_state
     
+    
+    
     async def query_datasource(self, data_source_id : str, filter: dict | None = None) :
         url = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
         
@@ -78,15 +91,30 @@ class NotionServiceImpl:
         ]
         
     async def retrieve_page(self, page_id : str) : 
+        page_uuid = ensure_uuid(page_id)
         
-        url = f"https://api.notion.com/v1/pages/{page_id}"
+        url = f"https://api.notion.com/v1/pages/{page_uuid}"
         
-        data = await self.get(url)
+        try:
+            data = await self.get(url)
+            
+            return {
+                "id": data["id"],
+                "properties": data["properties"]
+            }
+            
+        except HTTPStatusError as e:
+            
+            # 없음 → Create
+            if e.response.status_code in (400, 404):
+                return {
+                    "id": '',
+                    "properties": {}
+                }
+            raise
         
-        return {
-            "id": data["id"],
-            "properties": data["properties"]
-        }
+        
+        
         
     async def create_page(self, todo : Todo):
         
@@ -98,28 +126,29 @@ class NotionServiceImpl:
             status = "2"
         elif todo.status == "Completed":
             status = "3"
-    
-        payload = {
-            "parent": {
-                "data_source_id": "a488d6fa-7f7d-4628-96fd-2cbfffcb9dfa"
-            },
-            "properties": {
-                "상태": { "select": { "id": status } },
-                "텍스트": { "rich_text": [
-                        {
-                            "text": { "content": todo.description },
-                            "type": "text"
-                        }
-                    ] },
-                "마감일": {
-                    "date": { "start": todo.deadline },
-                    "type": "date"
-                },
-                "Name": { "title": [{ "text": { "content": todo.title } }] }
+        
+        properties = {
+            "상태": {"select": {"id": status}},
+            "Name": {"title": [{"text": {"content": todo.title}}]},
+        }
+
+        if todo.description:
+            properties["텍스트"] = {
+                "rich_text": [{"text": {"content": todo.description}}]
             }
+
+        if todo.deadline:
+            properties["마감일"] = {
+                "date": {"start": todo.deadline}
+            }
+
+        # TODO DataSource 선택 가능하도록 확장
+        payload = {
+            "parent": {"data_source_id": notion_state.data_sources[0]["id"]},
+            "properties": properties
         }
         
-        response = await self.post(url, json=payload)
-
-        print(response.text)
-        
+        try :
+            await self.post(url, json = payload)
+        except HTTPStatusError as e:
+            raise e

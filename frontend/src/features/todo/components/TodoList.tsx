@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import {useTodoList} from '@/features/todo/hooks/useTodo';
 import { ROUTES } from '@/shared/constants';
 
+
 export default function TodoList() {
     let navigate = useNavigate();
     const { todos, isLoading, deleteTodo } = useTodoList();
@@ -15,7 +16,7 @@ export default function TodoList() {
     };
 
     const handleCreate = () => {
-        navigate(`${ROUTES.TODOS}/0`);
+        navigate(`${ROUTES.TODOS}/create`);
     }
 
     const deleteHandle = async (id : string) => {

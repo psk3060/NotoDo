@@ -49,7 +49,7 @@ export default function TodoForm() {
   
   const handleSubmit = async (values : TodoFormValues) => {
     try {
-      if(id === '') {
+      if(id === 'create') {
         await createTodo({
           title : values.title,
           status : values.status,
@@ -85,7 +85,7 @@ export default function TodoForm() {
 
   return (
     <div className="container">
-      <h2 className="text-center my-4">{id === '' ? 'Create Todo' : 'Edit Todo'}</h2>
+      <h2 className="text-center my-4">{id === 'create' ? 'Create Todo' : 'Edit Todo'}</h2>
 
       <Formik<TodoFormValues>
         initialValues={initialValues}
