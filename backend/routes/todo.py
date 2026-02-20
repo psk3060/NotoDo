@@ -39,12 +39,11 @@ async def read_todo_detail(todo_id: str, request: Request):
 @router.post("")
 async def create_todo(todo : Todo, request: Request):
     await todo_service.create_todo(todo, request.state.user) 
-    return True
 
 @router.delete("/{todo_id}")
 def delete_todo(todo_id : str, request: Request) :
     todo_service.delete_todo(todo_id, request.state.user)
     
 @router.put("/{todo_id}")
-def update_todo(todo_id : str, todo_update: TodoUpdate, request: Request) :
-    todo_service.update_todo(todo_id, todo_update, request.state.user)
+async def update_todo(todo_id : str, todo_update: TodoUpdate, request: Request) :
+    await todo_service.update_todo(todo_id, todo_update, request.state.user)

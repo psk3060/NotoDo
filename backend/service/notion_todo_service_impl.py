@@ -77,7 +77,7 @@ class NotionTodoServiceImpl(TodoService):
                 todo = Todo(
                     id=page["id"],
                     title = self.get_text(props, "Name"),
-                    description = self.get_text(props, "텍스트"),
+                    description = self.get_text(props, "설명"),
                     status = status,
                     registDate = self.get_created_time(props, "작성일시"),
                     deadline = self.get_date(props, "마감일")
@@ -108,7 +108,7 @@ class NotionTodoServiceImpl(TodoService):
             todo = Todo(
                 id=page["id"],
                 title = self.get_text(props, "Name"),
-                description = self.get_text(props, "텍스트"),
+                description = self.get_text(props, "설명"),
                 status = status,
                 registDate = self.get_created_time(props, "작성일시"),
                 deadline = self.get_date(props, "마감일")
@@ -116,7 +116,7 @@ class NotionTodoServiceImpl(TodoService):
         
         return todo
 
-    # 작업 추가 TODO
+    # 작업 추가
     async def create_todo(self, todo : Todo, user_id:str):
         return await self.notion_service.create_page(todo)
         
@@ -124,6 +124,9 @@ class NotionTodoServiceImpl(TodoService):
     def delete_todo(self, todo_id :str, user_id:str) :
         pass
 
-    # 작업 수정 TODO
-    def update_todo(self, todo_id : str, todo_update: TodoUpdate, user_id:str) :
-        pass
+    # 작업 수정
+    async def update_todo(self, todo_id : str, todo_update: TodoUpdate, user_id:str) :
+        
+        # TODO 원본 조회
+        
+        return await self.notion_service.patch_page(todo_id, todo_update)
