@@ -118,15 +118,15 @@ class NotionTodoServiceImpl(TodoService):
 
     # 작업 추가
     async def create_todo(self, todo : Todo, user_id:str):
-        return await self.notion_service.create_page(todo)
+        await self.notion_service.create_page(todo)
         
-    # 작업 삭제 TODO
-    def delete_todo(self, todo_id :str, user_id:str) :
-        pass
+    # 작업 삭제
+    async def delete_todo(self, todo_id :str, user_id:str) :
+        await self.notion_service.patch_page(todo_id, None, True)
 
     # 작업 수정
     async def update_todo(self, todo_id : str, todo_update: TodoUpdate, user_id:str) :
         
         # TODO 원본 조회
         
-        return await self.notion_service.patch_page(todo_id, todo_update)
+        await self.notion_service.patch_page(todo_id, todo_update)

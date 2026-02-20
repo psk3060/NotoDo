@@ -41,8 +41,8 @@ async def create_todo(todo : Todo, request: Request):
     await todo_service.create_todo(todo, request.state.user) 
 
 @router.delete("/{todo_id}")
-def delete_todo(todo_id : str, request: Request) :
-    todo_service.delete_todo(todo_id, request.state.user)
+async def delete_todo(todo_id : str, request: Request) :
+    await todo_service.delete_todo(todo_id, request.state.user)
     
 @router.put("/{todo_id}")
 async def update_todo(todo_id : str, todo_update: TodoUpdate, request: Request) :

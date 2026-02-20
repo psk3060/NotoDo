@@ -157,43 +157,47 @@ class NotionServiceImpl:
             raise e
         
         
-    async def patch_page(self, todo_id : str, todo : Todo) :
+    async def patch_page(self, todo_id : str, todo : Todo | None = None, is_trash : bool | None = False) :
         
         url = f"https://api.notion.com/v1/pages/{todo_id}"
         
-        if todo.status == "Pending":
-            status = "1" 
-        elif todo.status == "In Progress":
-            status = "2"
-        elif todo.status == "Completed":
-            status = "3"
+        properties = {}
         
-        properties = {
-            "상태": {"select": {"id": status}},
-            "Name": {"title": [{"text": {"content": todo.title}}]},
-        }
+        if todo:
+            if todo.status == "Pending":
+                status = "1" 
+            elif todo.status == "In Progress":
+                status = "2"
+            elif todo.status == "Completed":
+                status = "3"
+            
+            properties = {
+                "상태": {"select": {"id": status}},
+                "Name": {"title": [{"text": {"content": todo.title}}]},
+            }
 
-        if todo.description:
-            properties["설명"] = {
-                "rich_text": [{"text": {"content": todo.description}}]
-            }
-        else:
-            properties["설명"] = {
-                "rich_text": []
-            }
-        
-        if todo.deadline:
-            properties["마감일"] = {
-                "date": {"start": todo.deadline}
-            }
-        else:
-            properties["마감일"] = {
-                "date": {}
-            }
+            if todo.description:
+                properties["설명"] = {
+                    "rich_text": [{"text": {"content": todo.description}}]
+                }
+            else:
+                properties["설명"] = {
+                    "rich_text": []
+                }
+            
+            if todo.deadline:
+                properties["마감일"] = {
+                    "date": {"start": todo.deadline}
+                }
+            else:
+                properties["마감일"] = {
+                    "date": {}
+                }
 
         # TODO DataSource 선택 가능하도록 확장
         payload = {
-            "properties": properties
+            "properties": properties,
+            "in_trash" : is_trash
         }
         
         try :
