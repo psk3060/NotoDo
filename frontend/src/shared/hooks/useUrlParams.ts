@@ -20,7 +20,11 @@ export function useNumberParam(paramName : string) : number {
  * @param paramName 
  * @returns 
  */
-export function useStringParam(paramName : string) : string | undefined {
+export function useStringParam(paramName : string) : string  {
     const params = useParams<{[key : string] : string}>();
-    return params[paramName];
+    const value = params[paramName];
+
+    if(!value) return "";
+    
+    return value;
 }

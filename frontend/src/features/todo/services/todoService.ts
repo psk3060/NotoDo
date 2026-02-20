@@ -4,6 +4,7 @@ import { getCurrentTimestamp } from "@/shared/utils/date";
 import { ENV } from "@/config/env";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { apiClient } from "@/config/apiClient";
+import {generateId} from "@/shared/utils/string";
 
 export async function getAllTodos() : Promise<Todo[]> {
     if(ENV.IS_DEV) {
@@ -14,7 +15,7 @@ export async function getAllTodos() : Promise<Todo[]> {
     return response.data;
 }
 
-export async function deleteTodo(id : number) : Promise<void> {
+export async function deleteTodo(id : string) : Promise<void> {
     if(ENV.IS_DEV) {
         return mockDeleteTodo(id);
     }
@@ -22,7 +23,7 @@ export async function deleteTodo(id : number) : Promise<void> {
     await apiClient.delete(API_ENDPOINTS.TODOS.BY_ID(id));
 }
 
-export async function getTodoById(id : number) : Promise <Todo | null> {
+export async function getTodoById(id : string) : Promise <Todo | null> {
     if(ENV.IS_DEV) {
         return mockGetTodoById(id);
 
@@ -38,7 +39,7 @@ export async function createTodo(payload : CreateTodoPayload) : Promise<void> {
     }
 
     const todoData = {
-        id : 0,
+        id : "",
         ...payload,
         registDate : getCurrentTimestamp(),
     };
@@ -47,7 +48,7 @@ export async function createTodo(payload : CreateTodoPayload) : Promise<void> {
 
 }
 
-export async function updateTodo(id:number, payload : UpdateTodoPayload) : Promise<void> {
+export async function updateTodo(id:string, payload : UpdateTodoPayload) : Promise<void> {
     if( ENV.IS_DEV ) {
         return mockUpdateTodo(id, payload);
         
@@ -60,16 +61,15 @@ function mockGetAllTodos() : Todo[] {
     return todoStore.getState().selectAll();
 }
 
-function mockGetTodoById(id : number) : Todo | null {
+function mockGetTodoById(id : string) : Todo | null {
     return todoStore.getState().selectById(id) || null;
 }
 
 function mockCreateTodo(payload : CreateTodoPayload) : void {
     const store = todoStore.getState();
-    const maxId = store.todos.reduce((max, todo) => Math.max(max, todo.id), 0);
-
+    
     const newTodo : Todo = {
-        id : maxId + 1,
+        id: generateId(),
         ...payload,
         registDate : getCurrentTimestamp()
     };
@@ -77,7 +77,7 @@ function mockCreateTodo(payload : CreateTodoPayload) : void {
     store.addTodo(newTodo);
 }
 
-function mockUpdateTodo(id : number, payload : UpdateTodoPayload) : void {
+function mockUpdateTodo(id : string, payload : UpdateTodoPayload) : void {
     const store = todoStore.getState();
     const todo = store.selectById(id);
 
@@ -91,6 +91,6 @@ function mockUpdateTodo(id : number, payload : UpdateTodoPayload) : void {
     }
 }
 
-function mockDeleteTodo(id : number) : void {
+function mockDeleteTodo(id : string) : void {
     todoStore.getState().deleteById(id);
 }

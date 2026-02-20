@@ -1,9 +1,11 @@
 # backend/routes/todo.py
 from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse
 
-from model.Todo import Todo
-from model.TodoUpdate import TodoUpdate
-from service.ServiceFactory import get_todo_service
+from model import Todo
+from model import TodoUpdate
+from service.service_factory import get_todo_service
+
 
 import os
 
@@ -18,22 +20,30 @@ ENVIRONMENT = os.getenv("TODO_ENV", "local")
 todo_service = get_todo_service(ENVIRONMENT)
 
 @router.get("")
-def read_todos(request: Request):
-    return todo_service.read_todos(request.state.user)
+async def read_todos(request: Request):
+    return await todo_service.read_todos(request.state.user)
+
+@router.get("/create")
+async def create_todo(request: Request):
+    return None
 
 @router.get("/{todo_id}")
-def read_todo_detail(todo_id: int, request: Request):
-    return todo_service.read_todo_detail(todo_id, request.state.user)
+async def read_todo_detail(todo_id: str, request: Request):
+    todo = await todo_service.read_todo_detail(todo_id, request.state.user)
+
+    if todo is None:
+        return RedirectResponse("/todo/create", 307)
+
+    return todo
     
 @router.post("")
-def create_todo(todo : Todo, request: Request):
-    todo_service.create_todo(todo, request.state.user) 
-    return True
+async def create_todo(todo : Todo, request: Request):
+    await todo_service.create_todo(todo, request.state.user) 
 
 @router.delete("/{todo_id}")
-def delete_todo(todo_id : int, request: Request) :
-    todo_service.delete_todo(todo_id, request.state.user)
+async def delete_todo(todo_id : str, request: Request) :
+    await todo_service.delete_todo(todo_id, request.state.user)
     
 @router.put("/{todo_id}")
-def update_todo(todo_id : int, todo_update: TodoUpdate, request: Request) :
-    todo_service.update_todo(todo_id, todo_update, request.state.user)
+async def update_todo(todo_id : str, todo_update: TodoUpdate, request: Request) :
+    await todo_service.update_todo(todo_id, todo_update, request.state.user)

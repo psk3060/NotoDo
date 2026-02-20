@@ -1,13 +1,13 @@
-from model import RefreshTokenLog, PostUser
+from model import LoginRequest, RefreshTokenLog, UserInfo
 from pydantic import BaseModel
 from core.security import verify_password
 import os, jwt, uuid, json, hashlib
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Response, Request
-from model import LoginRequest
+
 from core.security import rsa_manager
 
-from db.redis import redis_container
+from config.redis_setup import redis_container
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +24,7 @@ class AuthServiceImpl(BaseModel) :
                 - PASSWORD
         '''
         result = await db.execute(
-            select(PostUser).where(PostUser.userId == loginRequest.userId)
+            select(UserInfo).where(UserInfo.userId == loginRequest.userId)
         )
         user = result.scalar_one_or_none()
         
@@ -41,7 +41,7 @@ class AuthServiceImpl(BaseModel) :
         TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
         
         if token_type == "access":
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15) # seconds=10
+            expire = datetime.now(timezone.utc) + timedelta(minutes=1) # minutes=15
         elif token_type == "refresh":
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         else :

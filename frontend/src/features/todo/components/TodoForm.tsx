@@ -6,7 +6,7 @@ import { ErrorMessage, Field, Form, Formik } from "formik";
 
 import { TodoFormValues } from '@/shared/types';
 import { isValidDate, toKSTString } from '@/shared/utils/date';
-import { useNumberParam } from '@/shared/hooks/useUrlParams';
+import { useStringParam } from '@/shared/hooks/useUrlParams';
 
 import { useTodoDetail } from '../hooks/useTodo';
 import { ROUTES, TODO_STATUS } from '@/shared/constants';
@@ -32,7 +32,7 @@ function validateTodoForm(values : TodoFormValues) {
 export default function TodoForm() {
 
   let navigate = useNavigate();
-  const id = useNumberParam('id');
+  const id = useStringParam('id');
   const {todo, isLoading, createTodo, updateTodo} = useTodoDetail(id);
   
   const initialValues : TodoFormValues = {
@@ -49,7 +49,7 @@ export default function TodoForm() {
   
   const handleSubmit = async (values : TodoFormValues) => {
     try {
-      if(id === 0) {
+      if(id === 'create') {
         await createTodo({
           title : values.title,
           status : values.status,
@@ -85,7 +85,7 @@ export default function TodoForm() {
 
   return (
     <div className="container">
-      <h2 className="text-center my-4">{id === 0 ? 'Create Todo' : 'Edit Todo'}</h2>
+      <h2 className="text-center my-4">{id === 'create' ? 'Create Todo' : 'Edit Todo'}</h2>
 
       <Formik<TodoFormValues>
         initialValues={initialValues}

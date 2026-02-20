@@ -9,7 +9,7 @@
 - **Framework**: FastAPI, Beanie, SQLAlchemy
 - **Server**: Uvicorn (ASGI)
 - **Validation**: Pydantic
-- **Authentication**: OAuth2 Bearer Token (JWT) - 하이브리드 보관
+- **Authentication**: JWT Access/Refresh(Refresh Token Rotation + Redis 저장 + 토큰 갱신 이력 Trace)
 - **API**: RESTful API
 
 ### Frontend
@@ -37,7 +37,8 @@
 - [X] 프론트엔드 : 리팩토링(프론트엔드 완료)
 - [X] 서버 DB 변경 : PostgreSQL으로 DB 마이그레이션
 - [X] 서버 연동 : Access Token 재발급 로깅(MongoDB), IP 체크(Redis)
-- [ ] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
+- [X] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
+- [ ] Notion 연동 : 사용자 정보와 연동(Notion User_Id)
 - [ ] Notion 연동 : 댓글 기능 추가
 - [ ] Notion 연동 : 필터링(상태별, 날짜별, 제목 + 내용 검색) 추가
 - [ ] 서버 연동 : 자주 사용하는 필터링 조건 저장

@@ -11,3 +11,6 @@ class LoginRequest(BaseModel) :
     # AES IV (Base64)
     iv: Optional[str] = None
     
+    
+class PublicKeyResponse(BaseModel):
+    publicKey: str = Field(..., description="공개키")    

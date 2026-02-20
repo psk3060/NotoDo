@@ -7,7 +7,7 @@ export const API_ENDPOINTS = {
     },
     TODOS : {
         BASE : '/todos',
-        BY_ID : (id : number) => `/todos/${id}`
+        BY_ID : (id : string) => `/todos/${id}`
     }
 } as const;
 
@@ -17,7 +17,7 @@ export const ROUTES = {
     HOME : '/',
     LOGIN : '/login',
     TODOS : '/todos',
-    TODO_DETAIL : (id : number) => `/todos/${id}`
+    TODO_DETAIL : (id : string) => `/todos/${id}`
 } as const;
 
 

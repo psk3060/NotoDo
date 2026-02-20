@@ -1,5 +1,5 @@
 export interface Todo {
-    id : number;
+    id : string;
     title : string;
     status : string;
     registDate? : string;
@@ -8,7 +8,7 @@ export interface Todo {
 }
 
 export interface TodoListItem {
-    id : number;
+    id : string;
     title : string; 
     registDate : string;
     status : string;

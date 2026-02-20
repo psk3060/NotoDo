@@ -6,19 +6,20 @@ import { useNavigate } from 'react-router-dom';
 import {useTodoList} from '@/features/todo/hooks/useTodo';
 import { ROUTES } from '@/shared/constants';
 
+
 export default function TodoList() {
     let navigate = useNavigate();
     const { todos, isLoading, deleteTodo } = useTodoList();
 
-    const handleEdit = (id : number) => {
+    const handleEdit = (id : string) => {
         navigate(`${ROUTES.TODOS}/${id}`);
     };
 
     const handleCreate = () => {
-        navigate(`${ROUTES.TODOS}/0`);
+        navigate(`${ROUTES.TODOS}/create`);
     }
 
-    const deleteHandle = async (id : number) => {
+    const deleteHandle = async (id : string) => {
         if(confirm('정말 삭제하시겠습니까?')) {
             await deleteTodo(id);
         }
