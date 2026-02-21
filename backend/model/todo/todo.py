@@ -9,6 +9,7 @@ class Todo(BaseModel):
     deadline:Optional[str] = None
     description: Optional[str] = None
     userId : Optional[str] = None
+    priority : Optional[str] = None
 
 class TodoUpdate(BaseModel):
     title: Optional[str] = None
@@ -16,3 +17,4 @@ class TodoUpdate(BaseModel):
     deadline: Optional[str] = None
     description: Optional[str] = None 
     userId : Optional[str] = None 
+    priority : Optional[str] = None

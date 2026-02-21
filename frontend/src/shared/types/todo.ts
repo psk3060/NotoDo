@@ -5,6 +5,7 @@ export interface Todo {
     registDate? : string;
     deadline : string;
     description : string;
+    priority:string;
 }
 
 export interface TodoListItem {
@@ -13,6 +14,7 @@ export interface TodoListItem {
     registDate : string;
     status : string;
     deadline : string;
+    priority:string;
 }
 
 export interface TodoFormValues {
@@ -21,6 +23,7 @@ export interface TodoFormValues {
     registDate? : string;
     status : string;
     description : string;
+    priority:string;
 }
 
 export interface CreateTodoPayload {
@@ -28,6 +31,7 @@ export interface CreateTodoPayload {
   status: string;
   deadline: string;
   description: string;
+  priority:string;
 }
 
 export interface UpdateTodoPayload extends Todo {}

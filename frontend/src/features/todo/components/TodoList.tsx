@@ -43,8 +43,9 @@ export default function TodoList() {
                 <thead>
                     <tr>
                         <th scope="col">#</th>
+                        <th scope="col">Priority</th>
                         <th scope="col">Title</th>
-                        <th scope="col">RegistDate</th>
+                        { /* <th scope="col">RegistDate</th> */}
                         <th scope="col">Status</th>
                         <th scope="col">Deadline</th>
                         <th scope="col">Actions</th>
@@ -61,8 +62,9 @@ export default function TodoList() {
                         todos.map((todo, index) => (
                             <tr key={todo.id}>
                                 <td>{index + 1}</td>
+                                <td>{todo.priority}</td>
                                 <td>{todo.title}</td>
-                                <td>{todo.registDate}</td>
+                                { /* <td>{todo.registDate}</td> */ }
                                 <td>{todo.status}</td>          
                                 <td>{todo.deadline}</td>
                                 <td>
