@@ -26,4 +26,7 @@ def to_notion_priority_id(priority: TodoPriority | str) -> str:
 
 def from_notion_priority_id(option_id: str) -> str:
     """Notion option id → Notodo priority"""
-    return NOTION_PRIORITY_ID_REVERSE_MAP[option_id].name
+    if option_id :
+        return NOTION_PRIORITY_ID_REVERSE_MAP[option_id].name
+    else: 
+        return ""
