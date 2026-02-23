@@ -38,7 +38,6 @@
 - [X] 서버 DB 변경 : PostgreSQL으로 DB 마이그레이션
 - [X] 서버 연동 : Access Token 재발급 로깅(MongoDB), IP 체크(Redis)
 - [X] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
-- [ ] Notion 연동 : 사용자 정보와 연동(Notion User_Id)
 - [ ] Notion 연동 : 댓글 기능 추가
 - [ ] Notion 연동 : 필터링(상태별, 날짜별, 제목 + 내용 검색) 추가
 - [ ] 서버 연동 : 자주 사용하는 필터링 조건 저장
@@ -46,6 +45,7 @@
 - [ ] Notion 연동 : 동기화
 - [ ] Notion 연동 : 통계 대시보드
 - [ ] Notion 연동 : 오프라인 모드
-- [ ] ⏸️ Notion 연동 : OAUTH2 인증(public 통합 설정 필요하지만, 회사 관련 사항 입력 필수)
-- [ ] ⏸️ Notion 연동 : WebSocket 연동하여 노션 변경사항 실시간 반영(웹훅은 SSL 활성화 URL 필요)
-- [ ] ⏸️ v0에서 생성한 디자인 적용(부트스트랩 활용 검토)
+- [ ] ⏸️ Notion 연동 : OAUTH2 인증 - public 통합 설정 필요하지만, 회사 관련 사항 입력 필수
+- [ ] ⏸️ Notion 연동 : WebSocket 연동하여 노션 변경사항 실시간 반영 - 웹훅은 SSL 활성화 URL 필요
+- [ ] ⏸️ v0에서 생성한 디자인 적용 - 부트스트랩 활용
+- [ ] ⏸️ Notion 연동 : 사용자 정보와 연동(Notion User_Id) - 다른 계정으로 로그인하여, 공용 영역에 작성 및 수정해보았으나 created_by와 last_edited_by 모두 동일(해당 기능 의미 없음)

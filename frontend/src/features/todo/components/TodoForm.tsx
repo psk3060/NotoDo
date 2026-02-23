@@ -9,7 +9,7 @@ import { isValidDate, toKSTString } from '@/shared/utils/date';
 import { useStringParam } from '@/shared/hooks/useUrlParams';
 
 import { useTodoDetail } from '../hooks/useTodo';
-import { ROUTES, TODO_STATUS } from '@/shared/constants';
+import { DEFAULT_TODO_PRIORITY, DEFAULT_TODO_STATUS, ROUTES, TODO_PRIORITY, TODO_PRIORITY_LABEL, TODO_STATUS, TODO_STATUS_LABEL } from '@/shared/constants';
 
 function validateTodoForm(values : TodoFormValues) {
   const errors: Partial<Record<keyof TodoFormValues, string | Date>> = {};
@@ -39,8 +39,9 @@ export default function TodoForm() {
     title : todo?.title || '',
     deadline : todo?.deadline || '',
     registDate : todo?.registDate || toKSTString(new Date()),
-    status : todo?.status || TODO_STATUS.PENDING,
+    status : todo?.status || DEFAULT_TODO_STATUS,
     description : todo?.description || '',
+    priority : todo?.priority || DEFAULT_TODO_PRIORITY,
   }
 
   const handleCancel = () => {
@@ -54,7 +55,8 @@ export default function TodoForm() {
           title : values.title,
           status : values.status,
           deadline : values.deadline,
-          description : values.description
+          description : values.description,
+          priority:values.priority
         });
       }
       else {
@@ -64,7 +66,8 @@ export default function TodoForm() {
           status : values.status,
           registDate : values.registDate,
           deadline : values.deadline,
-          description : values.description
+          description : values.description,
+          priority:values.priority
         });
       }
     }
@@ -122,6 +125,20 @@ export default function TodoForm() {
                 name="title" 
                 placeholder="Enter todo title" />
             </fieldset>
+
+            <fieldset className="form-group">
+              <label htmlFor="todoPriority">Todo Priority</label>
+              <Field as="select" className="form-control" id="todoPriority" name="priority">
+                {Object.values(TODO_PRIORITY).map((p) => (
+                  <option key={p} value={p}>
+                    {TODO_PRIORITY_LABEL[p]}
+                  </option>
+                ))}
+              </Field>
+            </fieldset>
+
+            
+
             <fieldset className="form-group">
               <label htmlFor="todoDeadline">Todo Deadline</label>
               <Field 
@@ -132,12 +149,17 @@ export default function TodoForm() {
                 placeholder="Enter todo deadline" />
             </fieldset>
 
+
+
+
             <fieldset className="form-group">
               <label htmlFor="todoStatus">Todo Status</label>
               <Field as="select" className="form-control" id="todoStatus" name="status">
-                <option value={TODO_STATUS.PENDING}>{TODO_STATUS.PENDING}</option>
-                <option value={TODO_STATUS.IN_PROGRESS}>{TODO_STATUS.IN_PROGRESS}</option>
-                <option value={TODO_STATUS.COMPLETED}>{TODO_STATUS.COMPLETED}</option>
+                {Object.values(TODO_STATUS).map((p) => (
+                  <option key={p} value={p}>
+                    {TODO_STATUS_LABEL[p]}
+                  </option>
+                ))}
               </Field>
             </fieldset>
 

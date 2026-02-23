@@ -29,10 +29,41 @@ export const STORAGE_KEYS = {
 
 // Todo Status
 export const TODO_STATUS = {
-    PENDING : 'Pending',
-    IN_PROGRESS : 'In Progress',
-    COMPLETED : 'Completed'
+    PENDING : 'PENDING',
+    IN_PROGRESS : 'IN_PROGRESS',
+    COMPLETED : 'COMPLETED'
 } as const;
+
+export type TodoStatus = typeof TODO_STATUS[keyof typeof TODO_STATUS];
+
+export const TODO_STATUS_LABEL: Record<TodoStatus, string> = {
+  PENDING: '미시작',
+  IN_PROGRESS: '진행중',
+  COMPLETED: '완료'
+};
+
+export const DEFAULT_TODO_STATUS = TODO_STATUS.PENDING;
+
+
+export const TODO_PRIORITY = {
+  URGENT: 'P1',
+  HIGH: 'P2',
+  MEDIUM: 'P3',
+  LOW: 'P4',
+  VERY_LOW: 'P5'
+} as const;
+
+export type TodoPriority = typeof TODO_PRIORITY[keyof typeof TODO_PRIORITY];
+
+export const TODO_PRIORITY_LABEL: Record<TodoPriority, string> = {
+  P1: '긴급',
+  P2: '높음',
+  P3: '중간',
+  P4: '낮음',
+  P5: '매우 낮음'
+};
+
+export const DEFAULT_TODO_PRIORITY = TODO_PRIORITY.MEDIUM;
 
 export const TOAST_MESSAGES = {
     AUTH : {

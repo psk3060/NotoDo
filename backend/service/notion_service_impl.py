@@ -1,3 +1,5 @@
+from model.todo.notion_todo_priority import to_notion_priority_id
+from model.todo.notion_todo_status import to_notion_status_id
 from model.todo.todo import Todo
 import os, httpx
 import re, uuid
@@ -6,8 +8,6 @@ from dotenv import load_dotenv
 from model import NotionState, notion_state
 
 from httpx import HTTPStatusError
-
-import requests
 
 load_dotenv()
 
@@ -57,42 +57,64 @@ class NotionServiceImpl:
     
     async def retrieve_database(self) -> NotionState:
         
-        notion_state.database = await self.get(
-            f"https://api.notion.com/v1/databases/{os.getenv('NOTION_DATABASE_ID')}"
-        )
+        url = f"https://api.notion.com/v1/databases/{os.getenv('NOTION_DATABASE_ID')}"
         
-        notion_state.data_sources = notion_state.database.get("data_sources", [])
+        try:
+            notion_state.database = await self.get(url)
+            
+            notion_state.data_sources = notion_state.database.get("data_sources", [])
+            
+            return notion_state
+            
+        except HTTPStatusError as e:
+            return None
         
-        return notion_state
-    
+
     async def query_datasource(self, data_source_id : str, filter: dict | None = None) :
         url = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
         
         payload = {
             "sorts": [
                 {
-                    "property": "작성일시",
+                    "property": "우선순위",
+                    "direction": "ascending"
+                },
+                {
+                    "property": "상태",
+                    "direction": "ascending"
+                },
+                {
+                    "property": "마감일",
                     "direction": "ascending"
                 }
             ],
             "in_trash": False,
-            "result_type": "page"
+            "result_type": "page",
+            "page_size": 10
         }
 
-        
         if filter:
             payload["filter"] = filter
+        
+        try:
+            data = await self.post(url, payload)
             
-        data = await self.post(url, payload)
-        
-        return [
-            {
-                "id": page["id"],
-                "properties": page["properties"]
-            }
-            for page in data["results"]
-        ]
-        
+            return [
+                {
+                    "id": page["id"],
+                    "created_time" : page["created_time"],
+                    "properties": page["properties"]
+                }
+                for page in data["results"]
+            ]
+        except HTTPStatusError as e:
+            return [
+                {
+                    "id" : "",
+                    "created_time" : None,
+                    "properties" : {}
+                }
+            ]
     
     
     async def retrieve_page(self, page_id : str) : 
@@ -103,8 +125,11 @@ class NotionServiceImpl:
         try:
             data = await self.get(url)
             
+            # print(data)
+            
             return {
                 "id": data["id"],
+                "created_time" : data["created_time"],
                 "properties": data["properties"]
             }
             
@@ -114,6 +139,7 @@ class NotionServiceImpl:
             if e.response.status_code in (400, 404):
                 return {
                     "id": '',
+                    "created_time" : '',
                     "properties": {}
                 }
             raise
@@ -123,16 +149,10 @@ class NotionServiceImpl:
         
         url = "https://api.notion.com/v1/pages"
 
-        if todo.status == "Pending":
-            status = "1" 
-        elif todo.status == "In Progress":
-            status = "2"
-        elif todo.status == "Completed":
-            status = "3"
-        
         properties = {
-            "상태": {"select": {"id": status}},
-            "Name": {"title": [{"text": {"content": todo.title}}]},
+            "상태": {"status": {"id": to_notion_status_id(todo.status)}},
+            "작업명": {"title": [{"text": {"content": todo.title}}]},
+            "우선순위": { "select": { "id": to_notion_priority_id(todo.priority) } },
         }
 
         if todo.description:
@@ -164,37 +184,30 @@ class NotionServiceImpl:
         properties = {}
         
         if todo:
-            if todo.status == "Pending":
-                status = "1" 
-            elif todo.status == "In Progress":
-                status = "2"
-            elif todo.status == "Completed":
-                status = "3"
             
             properties = {
-                "상태": {"select": {"id": status}},
-                "Name": {"title": [{"text": {"content": todo.title}}]},
+                "상태": {"status": {"id": to_notion_status_id(todo.status)}},
+                "작업명": {"title": [{"text": {"content": todo.title}}]},
+                "우선순위": { "select": { "id": to_notion_priority_id(todo.priority) } },
             }
-
+            
             if todo.description:
                 properties["설명"] = {
                     "rich_text": [{"text": {"content": todo.description}}]
                 }
-            else:
-                properties["설명"] = {
-                    "rich_text": []
-                }
+            # 내용 없을 경우 공백
+            else :
+                properties["설명"] = {"rich_text": []}
+            
             
             if todo.deadline:
                 properties["마감일"] = {
                     "date": {"start": todo.deadline}
                 }
-            else:
-                properties["마감일"] = {
-                    "date": {}
-                }
-
-        # TODO DataSource 선택 가능하도록 확장
+            else :
+                properties["마감일"] = { "date": {} }
+        
+        
         payload = {
             "properties": properties,
             "in_trash" : is_trash

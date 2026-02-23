@@ -3,7 +3,7 @@ import { ENV } from "@/config/env";
 import { API_ENDPOINTS, TOAST_MESSAGES } from "@/shared/constants";
 import { LoginRequest, LoginResponse } from "@/shared/types";
 
-import { encryptPasswordAES, encryptWrapKey, fetchPublicKey, generateAesSymmetricKey, toBase64 } from "@/util/encryption";
+import { encryptPasswordAES, encryptWrapKey, fetchPublicKey, generateAesSymmetricKey, toBase64 } from "@/shared/utils/encryption";
 
 /**
  * 로그인
