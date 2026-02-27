@@ -1,7 +1,7 @@
 from utils.notion_util import get_date_time
 from model.todo.notion_todo_priority import to_notion_priority_id
 from model.todo.notion_todo_status import to_notion_status_id
-from model.todo.todo_model import Todo
+from model.todo.todo_model import Todo, TodoComment
 import os, httpx
 import re, uuid
 from dotenv import load_dotenv
@@ -238,4 +238,25 @@ class NotionServiceImpl:
             print(e)
             return []
         
+    async def create_reply(self, comment : TodoComment) :
         
+        url = "https://api.notion.com/v1/comments"
+        
+        payload = {
+            "rich_text": [{"text": {"content": comment.commentText}}],
+            "parent": {
+                "page_id": comment.todoId,
+                "type": "page_id"
+            },
+            # TODO 첨부파일
+            "attachments": [],
+            "display_name": {
+                "type": "custom",
+                "custom": { "name": comment.author }
+            }
+        }
+
+        try :
+            await self.post(url, json = payload)
+        except HTTPStatusError as e:
+            raise e

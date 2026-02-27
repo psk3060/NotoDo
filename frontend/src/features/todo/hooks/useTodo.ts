@@ -3,7 +3,7 @@ import { useApiWithAuth } from "@/shared/hooks/useApiWithAuth";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import * as todoService from '@/features/todo/services/todoService';
-import { CreateTodoPayload, Todo, UpdateTodoPayload } from "@/shared/types";
+import { CreateTodoPayload, Todo, TodoComment, UpdateTodoPayload } from "@/shared/types";
 import { useNavigate } from "react-router-dom";
 
 
@@ -89,6 +89,9 @@ export function useTodoDetail(id : string) {
 
     const createTodo = useCallback(
         async (payload : CreateTodoPayload) => {
+
+            setIsLoading(true);
+
             try {
                 await executeWithAuth(() => todoService.createTodo(payload));
                 toast.success(TOAST_MESSAGES.TODO.CREATE_SUCCESS);
@@ -99,12 +102,18 @@ export function useTodoDetail(id : string) {
                 toast.error(TOAST_MESSAGES.TODO.CREATE_FAIL);
                 throw error;
             }
+            finally {
+                setIsLoading(false);
+            }
         }
         , [executeWithAuth, navigate]
     );
 
     const updateTodo = useCallback(
         async(payload : UpdateTodoPayload) => {
+
+            setIsLoading(true);
+
             try {
                 await executeWithAuth(() => todoService.updateTodo(id, payload));
                 toast.success(TOAST_MESSAGES.TODO.UPDATE_SUCCESS);
@@ -115,14 +124,40 @@ export function useTodoDetail(id : string) {
                 toast.error(TOAST_MESSAGES.TODO.UPDATE_FAIL);
                 throw error;
             }
+            finally {
+                setIsLoading(false);
+            }
 
         }, [id, executeWithAuth, navigate]);
+    
+    const createComment = useCallback( 
+        async (payload : TodoComment) => {
+
+            setIsLoading(true);
+
+            try {
+                await executeWithAuth(() => todoService.createTodoComment(payload));
+                toast.success(TOAST_MESSAGES.TODO.CREATE_COMMENT_SUCCESS);
+                navigate(ROUTES.TODOS);
+            }
+            catch(error) {
+                console.error('Failed to create todo : ', error);
+                toast.error(TOAST_MESSAGES.TODO.CREATE_COMMENT_FAIL);
+                throw error;
+            }
+            finally {
+                setIsLoading(false);
+            }
+        }
+        , [executeWithAuth, navigate]
+    );
     
     useEffect(() => {fetchTodo(); }, [fetchTodo]);
 
     return {
         todo,
         isLoading,
+        createComment,
         createTodo,
         updateTodo,
     }

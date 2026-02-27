@@ -89,3 +89,6 @@ class ProdTodoServiceImpl(TodoService):
     # 작업 수정
     async def update_todo(self, todo_id : str, todo_update: Todo, user_id:str) :
         await self.notion_service.patch_page(todo_id, todo_update)
+        
+    async def create_comment(self, comment : TodoComment) :
+        await self.notion_service.create_reply(comment)

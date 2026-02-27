@@ -14,7 +14,8 @@ import { useTodoDetail } from '../hooks/useTodo';
 import { DEFAULT_TODO_PRIORITY, DEFAULT_TODO_STATUS, ROUTES, TODO_PRIORITY, TODO_PRIORITY_LABEL, TODO_STATUS, TODO_STATUS_LABEL } from '@/shared/constants';
 import TodoReplyRegist from './TodoReplyRegist';
 import TodoReplyList from './TodoReplyList';
-import { useCallback } from 'react';
+import { toast } from 'react-toastify';
+
 
 function validateTodoForm(values : TodoFormValues) {
   const errors: Partial<Record<keyof TodoFormValues, string | Date>> = {};
@@ -38,7 +39,7 @@ export default function TodoForm() {
 
   let navigate = useNavigate();
   const id = useStringParam('id');
-  const {todo, isLoading, createTodo, updateTodo} = useTodoDetail(id);
+  const {todo, isLoading, createTodo, updateTodo, createComment} = useTodoDetail(id);
   
   const initialValues : TodoFormValues = {
     title : todo?.title || '',
@@ -49,12 +50,25 @@ export default function TodoForm() {
     priority : todo?.priority || DEFAULT_TODO_PRIORITY
   }
 
-  const handleReplyRegist = useCallback(
-    (data : string) => {
-      alert(`서비스 준비중 입니다. ${data}`);
-      return false;
-    }
-    , []);
+  const handleReplyRegist = async (author : string, commentText : string) => {
+
+      try {
+        if (id === 'create' || !todo) {
+            throw Error('잘못된 접근입니다.');
+        }
+
+        await createComment({
+          author : author,
+          todoId : todo.id,
+          commentText : commentText
+        });
+
+      }
+      catch(error) {
+        const message = error instanceof Error ? error.message : 'Unknown Error';
+        toast.error(message); // alert → toast로 교체
+      }
+    };
 
   const handleCancel = () => {
     navigate(ROUTES.TODOS);

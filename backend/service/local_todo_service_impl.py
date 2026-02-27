@@ -1,3 +1,4 @@
+from model.todo.todo_model import TodoComment
 from service.todo_service import TodoService
 from model import Todo
 from typing import List
@@ -55,3 +56,7 @@ class LocalTodoServiceImpl(TodoService):
                     updated_data['description'] = todo_update.description
 
                 self.todo_list[index] = Todo(**updated_data)
+    
+    def create_comment(self, comment : TodoComment) :
+        '''답글 등록 TODO'''
+        pass

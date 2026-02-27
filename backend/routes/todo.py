@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
-from model import Todo
+from model import Todo, TodoComment
 from service.service_factory import get_todo_service
 
 
@@ -47,3 +47,8 @@ async def delete_todo(todo_id : str, request: Request) :
 @router.put("/{todo_id}")
 async def update_todo(todo_id : str, todo_update: Todo, request: Request) :
     await todo_service.update_todo(todo_id, todo_update, request.state.user)
+    
+@router.post("/{todo_id}/comments")
+async def create_todo_comment(todo_id : str, comment : TodoComment, request: Request) :
+    comment.todoId = todo_id
+    await todo_service.create_comment(comment)
