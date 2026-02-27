@@ -1,6 +1,7 @@
+from utils.notion_util import get_date_time
 from model.todo.notion_todo_priority import to_notion_priority_id
 from model.todo.notion_todo_status import to_notion_status_id
-from model.todo.todo import Todo
+from model.todo.todo_model import Todo, TodoComment
 import os, httpx
 import re, uuid
 from dotenv import load_dotenv
@@ -38,6 +39,7 @@ class NotionServiceImpl:
         self.client = httpx.AsyncClient(headers=self.headers)
     
     async def get(self, url: str):
+        
         res = await self.client.get(url, headers=self.headers)
         res.raise_for_status()
         return res.json()
@@ -124,8 +126,6 @@ class NotionServiceImpl:
         
         try:
             data = await self.get(url)
-            
-            # print(data)
             
             return {
                 "id": data["id"],
@@ -215,5 +215,48 @@ class NotionServiceImpl:
         
         try :
             await self.patch(url, json = payload)
+        except HTTPStatusError as e:
+            raise e
+    
+    async def retrieve_reply_list(self, page_id : str):
+        url = f"https://api.notion.com/v1/comments?block_id={page_id}"
+        
+        try:
+            comments = await self.get(url)
+            
+            return [
+                {
+                    "id" : comment["id"]
+                    , "body" : comment["rich_text"][0]['plain_text']
+                    , "author" : comment["display_name"]['resolved_name']
+                    , "lastModified" : get_date_time(comment, "last_edited_time")
+                }
+                for comment in comments["results"]
+            ] 
+            
+        except HTTPStatusError as e:
+            print(e)
+            return []
+        
+    async def create_reply(self, comment : TodoComment) :
+        
+        url = "https://api.notion.com/v1/comments"
+        
+        payload = {
+            "rich_text": [{"text": {"content": comment.commentText}}],
+            "parent": {
+                "page_id": comment.todoId,
+                "type": "page_id"
+            },
+            # TODO 첨부파일
+            "attachments": [],
+            "display_name": {
+                "type": "custom",
+                "custom": { "name": comment.author }
+            }
+        }
+
+        try :
+            await self.post(url, json = payload)
         except HTTPStatusError as e:
             raise e

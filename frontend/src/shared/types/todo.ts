@@ -5,7 +5,8 @@ export interface Todo {
     registDate? : string;
     deadline : string;
     description : string;
-    priority:string;
+    priority?:string;
+    comments?: TodoComment[];
 }
 
 export interface TodoListItem {
@@ -14,7 +15,7 @@ export interface TodoListItem {
     registDate : string;
     status : string;
     deadline : string;
-    priority:string;
+    priority?:string;
 }
 
 export interface TodoFormValues {
@@ -32,6 +33,14 @@ export interface CreateTodoPayload {
   deadline: string;
   description: string;
   priority:string;
+}
+
+export interface TodoComment {
+    commentId? : string;
+    todoId : string;
+    author : string;
+    commentText : string;
+    lastModified? : string;
 }
 
 export interface UpdateTodoPayload extends Todo {}

@@ -33,7 +33,7 @@ def get_select_name( props, key):
     except:
         return None    
     
-def get_created_time( page):
+def get_date_time(page, key = "created_time"):
     try:
         dt_utc = datetime.fromisoformat(page["created_time"].replace("Z", "+00:00"))
         dt_kst = dt_utc.astimezone(timezone(timedelta(hours=9)))

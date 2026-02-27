@@ -1,3 +1,5 @@
+import '@/styles/todoform.css'
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
 
@@ -10,6 +12,10 @@ import { useStringParam } from '@/shared/hooks/useUrlParams';
 
 import { useTodoDetail } from '../hooks/useTodo';
 import { DEFAULT_TODO_PRIORITY, DEFAULT_TODO_STATUS, ROUTES, TODO_PRIORITY, TODO_PRIORITY_LABEL, TODO_STATUS, TODO_STATUS_LABEL } from '@/shared/constants';
+import TodoReplyRegist from './TodoReplyRegist';
+import TodoReplyList from './TodoReplyList';
+import { toast } from 'react-toastify';
+
 
 function validateTodoForm(values : TodoFormValues) {
   const errors: Partial<Record<keyof TodoFormValues, string | Date>> = {};
@@ -33,7 +39,7 @@ export default function TodoForm() {
 
   let navigate = useNavigate();
   const id = useStringParam('id');
-  const {todo, isLoading, createTodo, updateTodo} = useTodoDetail(id);
+  const {todo, isLoading, createTodo, updateTodo, createComment} = useTodoDetail(id);
   
   const initialValues : TodoFormValues = {
     title : todo?.title || '',
@@ -41,8 +47,28 @@ export default function TodoForm() {
     registDate : todo?.registDate || toKSTString(new Date()),
     status : todo?.status || DEFAULT_TODO_STATUS,
     description : todo?.description || '',
-    priority : todo?.priority || DEFAULT_TODO_PRIORITY,
+    priority : todo?.priority || DEFAULT_TODO_PRIORITY
   }
+
+  const handleReplyRegist = async (author : string, commentText : string) => {
+
+      try {
+        if (id === 'create' || !todo) {
+            throw Error('잘못된 접근입니다.');
+        }
+
+        await createComment({
+          author : author,
+          todoId : todo.id,
+          commentText : commentText
+        });
+
+      }
+      catch(error) {
+        const message = error instanceof Error ? error.message : 'Unknown Error';
+        toast.error(message); // alert → toast로 교체
+      }
+    };
 
   const handleCancel = () => {
     navigate(ROUTES.TODOS);
@@ -137,8 +163,6 @@ export default function TodoForm() {
               </Field>
             </fieldset>
 
-            
-
             <fieldset className="form-group">
               <label htmlFor="todoDeadline">Todo Deadline</label>
               <Field 
@@ -148,9 +172,6 @@ export default function TodoForm() {
                 name="deadline" 
                 placeholder="Enter todo deadline" />
             </fieldset>
-
-
-
 
             <fieldset className="form-group">
               <label htmlFor="todoStatus">Todo Status</label>
@@ -204,7 +225,11 @@ export default function TodoForm() {
         )}
 
       </Formik>
-
+      
+      { (todo && todo.comments) && <TodoReplyList comments={todo.comments} /> }
+      
+      { todo && <TodoReplyRegist onRegist={handleReplyRegist} /> }
+      
     </div>
 
   );

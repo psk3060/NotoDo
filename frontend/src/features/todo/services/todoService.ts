@@ -1,4 +1,4 @@
-import { CreateTodoPayload, Todo, UpdateTodoPayload } from "@/shared/types";
+import { CreateTodoPayload, Todo, TodoComment, UpdateTodoPayload } from "@/shared/types";
 import todoStore from "@/features/todo/stores/todoStore";
 import { getCurrentTimestamp } from "@/shared/utils/date";
 import { ENV } from "@/config/env";
@@ -57,6 +57,16 @@ export async function updateTodo(id:string, payload : UpdateTodoPayload) : Promi
     await apiClient.put(API_ENDPOINTS.TODOS.BY_ID(id), payload);
 }
 
+export async function createTodoComment(comment : TodoComment) : Promise<void> {
+
+    if(ENV.IS_DEV) {
+        mockCreateTodoComment(comment);
+    }
+
+    await apiClient.post(API_ENDPOINTS.TODOS.COMMENT(comment.todoId), comment);
+}
+
+
 function mockGetAllTodos() : Todo[] {
     return todoStore.getState().selectAll();
 }
@@ -76,6 +86,21 @@ function mockCreateTodo(payload : CreateTodoPayload) : void {
 
     store.addTodo(newTodo);
 }
+
+function mockCreateTodoComment(comment : TodoComment) : void {
+    const store = todoStore.getState();
+
+    const newComment : TodoComment = {
+        commentId : generateId(),
+        todoId : comment.todoId,
+        author : 'demo',
+        commentText : comment.commentText,
+        lastModified : getCurrentTimestamp()
+    }
+
+    store.addComment(newComment);
+}
+
 
 function mockUpdateTodo(id : string, payload : UpdateTodoPayload) : void {
     const store = todoStore.getState();
