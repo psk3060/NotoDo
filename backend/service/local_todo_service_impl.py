@@ -1,5 +1,5 @@
 from service.todo_service import TodoService
-from model import Todo, TodoUpdate
+from model import Todo
 from typing import List
 
 class LocalTodoServiceImpl(TodoService):
@@ -32,7 +32,7 @@ class LocalTodoServiceImpl(TodoService):
     def delete_todo(self, todo_id :str, user_id : str) :
         self.todo_list.remove([x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0])
 
-    def update_todo(self, todo_id : str, todo_update: TodoUpdate, user_id:str) :
+    def update_todo(self, todo_id : str, todo_update: Todo, user_id:str) :
         
         todo_update.userId = user_id
         

@@ -3,7 +3,6 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse
 
 from model import Todo
-from model import TodoUpdate
 from service.service_factory import get_todo_service
 
 
@@ -24,7 +23,8 @@ async def read_todos(request: Request):
     return await todo_service.read_todos(request.state.user)
 
 @router.get("/create")
-async def create_todo(request: Request):
+async def create_todo(_: Request):
+    '''추가 버튼 클릭 시'''
     return None
 
 @router.get("/{todo_id}")
@@ -45,5 +45,5 @@ async def delete_todo(todo_id : str, request: Request) :
     await todo_service.delete_todo(todo_id, request.state.user)
     
 @router.put("/{todo_id}")
-async def update_todo(todo_id : str, todo_update: TodoUpdate, request: Request) :
+async def update_todo(todo_id : str, todo_update: Todo, request: Request) :
     await todo_service.update_todo(todo_id, todo_update, request.state.user)

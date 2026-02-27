@@ -117,7 +117,7 @@ export function useTodoDetail(id : string) {
             }
 
         }, [id, executeWithAuth, navigate]);
-
+    
     useEffect(() => {fetchTodo(); }, [fetchTodo]);
 
     return {

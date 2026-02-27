@@ -25,27 +25,27 @@ class UserInfo(Base):
     
     createdAt: Mapped[datetime] = mapped_column("created_at", DateTime, nullable=True, default=datetime.now)
     
-    # user_add: Mapped["UserAdd"] = relationship(
-    #     "UserAdd",
-    #     back_populates="user",
-    #     uselist=False,
-    #     cascade="all, delete-orphan"
-    # )
+    user_add: Mapped["UserAdd"] = relationship(
+        "UserAdd",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
     
 class UserAdd(Base):
     '''사용자 부가 정보'''
     __tablename__ = "user_add"
     
-    # user_id: Mapped[str] = mapped_column(
-    #     "user_id",
-    #     String(36),
-    #     ForeignKey("users.user_id"),
-    #     primary_key=True
-    # )
-    userId : Mapped[str] = mapped_column("user_id", String(36), primary_key=True)
+    user_id: Mapped[str] = mapped_column(
+        "user_id",
+        String(36),
+        ForeignKey("users.user_id"),
+        primary_key=True
+    )
+    
     notionId : Mapped[str] = mapped_column("notion_id", String(100), nullable=True)    
     
-    # user: Mapped["UserInfo"] = relationship(
-    #     "UserInfo",
-    #     back_populates="user_add"
-    # )
+    user: Mapped["UserInfo"] = relationship(
+            "UserInfo",
+            back_populates="user_add"
+    )

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from model import Todo, TodoUpdate
+from model import Todo
 from typing import List
 
 class TodoService(ABC):
@@ -20,5 +20,5 @@ class TodoService(ABC):
         pass
     
     @abstractmethod
-    def update_todo(todo_id : int, todo_update: TodoUpdate, user_id : str) :
+    def update_todo(todo_id : int, todo_update: Todo, user_id : str) :
         pass

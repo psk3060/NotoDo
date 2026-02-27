@@ -1,3 +1,5 @@
+import '@/styles/todoform.css'
+
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faSave, faListOl } from '@fortawesome/free-solid-svg-icons'
 
@@ -10,6 +12,9 @@ import { useStringParam } from '@/shared/hooks/useUrlParams';
 
 import { useTodoDetail } from '../hooks/useTodo';
 import { DEFAULT_TODO_PRIORITY, DEFAULT_TODO_STATUS, ROUTES, TODO_PRIORITY, TODO_PRIORITY_LABEL, TODO_STATUS, TODO_STATUS_LABEL } from '@/shared/constants';
+import TodoReplyRegist from './TodoReplyRegist';
+import TodoReplyList from './TodoReplyList';
+import { useCallback } from 'react';
 
 function validateTodoForm(values : TodoFormValues) {
   const errors: Partial<Record<keyof TodoFormValues, string | Date>> = {};
@@ -41,8 +46,15 @@ export default function TodoForm() {
     registDate : todo?.registDate || toKSTString(new Date()),
     status : todo?.status || DEFAULT_TODO_STATUS,
     description : todo?.description || '',
-    priority : todo?.priority || DEFAULT_TODO_PRIORITY,
+    priority : todo?.priority || DEFAULT_TODO_PRIORITY
   }
+
+  const handleReplyRegist = useCallback(
+    (data : string) => {
+      alert(`서비스 준비중 입니다. ${data}`);
+      return false;
+    }
+    , []);
 
   const handleCancel = () => {
     navigate(ROUTES.TODOS);
@@ -137,8 +149,6 @@ export default function TodoForm() {
               </Field>
             </fieldset>
 
-            
-
             <fieldset className="form-group">
               <label htmlFor="todoDeadline">Todo Deadline</label>
               <Field 
@@ -148,9 +158,6 @@ export default function TodoForm() {
                 name="deadline" 
                 placeholder="Enter todo deadline" />
             </fieldset>
-
-
-
 
             <fieldset className="form-group">
               <label htmlFor="todoStatus">Todo Status</label>
@@ -204,7 +211,11 @@ export default function TodoForm() {
         )}
 
       </Formik>
-
+      
+      { (todo && todo.comments) && <TodoReplyList comments={todo.comments} /> }
+      
+      { todo && <TodoReplyRegist onRegist={handleReplyRegist} /> }
+      
     </div>
 
   );
