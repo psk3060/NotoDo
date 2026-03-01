@@ -1,5 +1,6 @@
+import math
 import os
-from model.todo.todo_model import TodoComment
+from model.todo.todo_model import TodoComment, TodoListResponse
 from model.todo.notion_todo_priority import from_notion_priority_id
 from model.todo.notion_todo_status import from_notion_status_id
 from utils.notion_util import get_date_time, get_date, get_select, get_select_name, get_status, get_status_name, get_text
@@ -22,32 +23,64 @@ class ProdTodoServiceImpl(TodoService):
         return ProdTodoServiceImpl(notion_service)
     
     # 모두 조회
-    async def read_todos(self, user_id:str) -> List[Todo]:
+    async def read_todos(self, user_id:str) -> TodoListResponse:
         todos = []
 
-        # print(notion_state.data_sources)
-        
-        for source in notion_state.data_sources:
-            pages = await self.notion_service.query_datasource(source["id"])
+        if len(notion_state.data_sources) > 0:
+            source = notion_state.data_sources[0]
             
-            for page in pages:
-                props = page["properties"]
-                
-                todo = Todo(
+        result = await self.notion_service.query_datasource(source["id"])
+        
+        pages = result['pages']
+        
+        for page in pages:
+            props = page["properties"]
+
+            todo = Todo(
                     id=page["id"],
                     title = get_text(props, "작업명"),
                     status = get_status_name(props, "상태"),
                     registDate = get_date_time(page, 'created_time'),
                     deadline = get_date(props, '마감일'),
                     priority = get_select_name(props, "우선순위")
-                )
+            )
                 
-                todos.append(todo)
+            todos.append(todo)
         
-        
-        
-        return todos
+        return TodoListResponse(data = todos, total=len(todos))
 
+    async def read_todos_with_paging(self, user_id : str, currentPage : int, pageSize : int) -> TodoListResponse:
+        todos = []
+
+        if len(notion_state.data_sources) > 0:
+            source = notion_state.data_sources[0]
+            
+        result = await self.notion_service.query_datasource(source["id"])
+        
+        pages = result['pages']
+        
+        for page in pages:
+            props = page["properties"]
+
+            todo = Todo(
+                    id=page["id"],
+                    title = get_text(props, "작업명"),
+                    status = get_status_name(props, "상태"),
+                    registDate = get_date_time(page, 'created_time'),
+                    deadline = get_date(props, '마감일'),
+                    priority = get_select_name(props, "우선순위")
+            )
+                
+            todos.append(todo)
+            
+        
+        total = len(todos)
+        start = (currentPage - 1) * pageSize
+        end = start + pageSize
+        
+        return TodoListResponse(data = todos[start:end], total= total, totalPages=math.ceil(total / pageSize))
+        
+    
     # 상세 조회
     async def read_todo_detail(self, todo_id: str, user_id:str) -> Todo: 
         

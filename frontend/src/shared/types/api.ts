@@ -18,3 +18,10 @@ export interface HttpApiError {
         };
     };
 }
+
+export interface PagedResponse<T> {
+    data: T[];
+    total: number;  // 전체 개수
+    message? : string;
+    totalPages : number;
+}

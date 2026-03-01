@@ -91,8 +91,8 @@ class NotionServiceImpl:
                 }
             ],
             "in_trash": False,
-            "result_type": "page",
-            "page_size": 10
+            "archived": False,
+            "result_type": "page"
         }
 
         if filter:
@@ -101,7 +101,7 @@ class NotionServiceImpl:
         try:
             data = await self.post(url, payload)
             
-            return [
+            pages = [
                 {
                     "id": page["id"],
                     "created_time" : page["created_time"],
@@ -109,15 +109,23 @@ class NotionServiceImpl:
                 }
                 for page in data["results"]
             ]
+            
+            result = {
+                "pages" : pages
+                , "has_more" : data["has_more"]
+            }
+            
+            return result
         except HTTPStatusError as e:
-            return [
-                {
+            
+            return {
+                "pages" : {
                     "id" : "",
                     "created_time" : None,
                     "properties" : {}
-                }
-            ]
-    
+                },
+                "has_more" : None
+            }
     
     async def retrieve_page(self, page_id : str) : 
         page_uuid = ensure_uuid(page_id)
