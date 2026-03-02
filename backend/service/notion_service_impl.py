@@ -1,6 +1,6 @@
 from utils.notion_util import get_date_time
-from model.todo.notion_todo_priority import to_notion_priority_id
-from model.todo.notion_todo_status import to_notion_status_id
+from model.todo.notion_todo_priority import to_notion_priority_id, to_notion_priority_value
+from model.todo.notion_todo_status import to_notion_status_id, to_notion_status_value
 from model.todo.todo_model import Todo, TodoComment
 import os, httpx
 import re, uuid
@@ -91,17 +91,31 @@ class NotionServiceImpl:
                 }
             ],
             "in_trash": False,
-            "result_type": "page",
-            "page_size": 10
+            "archived": False,
+            "result_type": "page"
         }
-
-        if filter:
-            payload["filter"] = filter
         
+        if filter:
+            
+            filter_list = []
+            
+            if "작업명" in filter:
+                filter_list.append({ "title" : {"contains": filter['작업명']}, "property" : "작업명" })
+            
+            if "상태" in filter:
+                filter_list.append({ "status": { "equals": to_notion_status_value(filter['상태']) }, "property" : "상태" })
+            
+            if "우선순위" in filter:
+                filter_list.append({ "select": { "equals": to_notion_priority_value(filter['우선순위']) }, "property" : "우선순위" })
+            
+            payload["filter"] = {
+                "and" : filter_list
+            }
+            
         try:
             data = await self.post(url, payload)
             
-            return [
+            pages = [
                 {
                     "id": page["id"],
                     "created_time" : page["created_time"],
@@ -109,15 +123,23 @@ class NotionServiceImpl:
                 }
                 for page in data["results"]
             ]
+            
+            result = {
+                "pages" : pages
+                , "has_more" : data["has_more"]
+            }
+            
+            return result
         except HTTPStatusError as e:
-            return [
-                {
+            
+            return {
+                "pages" : {
                     "id" : "",
                     "created_time" : None,
                     "properties" : {}
-                }
-            ]
-    
+                },
+                "has_more" : None
+            }
     
     async def retrieve_page(self, page_id : str) : 
         page_uuid = ensure_uuid(page_id)

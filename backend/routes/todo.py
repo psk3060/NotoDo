@@ -1,10 +1,9 @@
 # backend/routes/todo.py
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 
-from model import Todo, TodoComment
+from model import Todo, TodoComment, TodoListRequest
 from service.service_factory import get_todo_service
-
 
 import os
 
@@ -19,8 +18,19 @@ ENVIRONMENT = os.getenv("TODO_ENV", "local")
 todo_service = get_todo_service(ENVIRONMENT)
 
 @router.get("")
-async def read_todos(request: Request):
-    return await todo_service.read_todos(request.state.user)
+async def read_todos(
+                currentPage: int = Query(default=0),
+                pageSize: int = Query(default=10),
+                title : str = Query(default = ""),
+                priority : str = Query(default = ""),
+                status : str = Query(default = ""),
+                request: Request = None):
+    
+    listRequest = TodoListRequest(currentPage=currentPage, pageSize=pageSize, userId = request.state.user, title = title, priority=priority, status = status)
+    
+    return await todo_service.read_todos_with_paging(listRequest)
+    
+    
 
 @router.get("/create")
 async def create_todo(_: Request):

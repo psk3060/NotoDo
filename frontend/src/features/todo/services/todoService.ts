@@ -5,6 +5,7 @@ import { ENV } from "@/config/env";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { apiClient } from "@/config/apiClient";
 import {generateId} from "@/shared/utils/string";
+import type {PagedResponse, SearchParam} from '@/shared/types'
 
 export async function getAllTodos() : Promise<Todo[]> {
     if(ENV.IS_DEV) {
@@ -14,6 +15,19 @@ export async function getAllTodos() : Promise<Todo[]> {
     const response = await apiClient.get<Todo[]>(API_ENDPOINTS.TODOS.BASE);
     return response.data;
 }
+
+export async function getAllTodosWithPaging(currentPage : number, pageSize : number, searchParam : SearchParam) : Promise<PagedResponse<Todo>> {
+    if(ENV.IS_DEV) {
+        return mockGetAllTodosWithPaging(currentPage, pageSize, searchParam);
+    }
+
+    const response = await apiClient.get<PagedResponse<Todo>>(API_ENDPOINTS.TODOS.BASE, {
+        params: { pageSize, currentPage, ...searchParam }
+    });
+
+    return response.data;
+}
+
 
 export async function deleteTodo(id : string) : Promise<void> {
     if(ENV.IS_DEV) {
@@ -69,6 +83,30 @@ export async function createTodoComment(comment : TodoComment) : Promise<void> {
 
 function mockGetAllTodos() : Todo[] {
     return todoStore.getState().selectAll();
+}
+
+function mockGetAllTodosWithPaging(page : number, pageSize : number, searchParam : SearchParam) : PagedResponse<Todo> {
+    let todos = todoStore.getState().selectAll();
+
+    if(searchParam.title) {
+        todos = todos.filter(todo => todo.title.includes(searchParam.title));
+    }
+
+    if(searchParam.priority) {
+        todos = todos.filter(todo => todo.priority === searchParam.priority);
+    }
+
+    if(searchParam.status) {
+        todos = todos.filter(todo => todo.status === searchParam.status);
+    }
+
+    const start = (page - 1) * pageSize;
+    
+    return {
+        data: todos.slice(start, start + pageSize),
+        total: todos.length,
+        totalPages : Math.ceil((todos.length ?? 0) / pageSize)
+    };
 }
 
 function mockGetTodoById(id : string) : Todo | null {

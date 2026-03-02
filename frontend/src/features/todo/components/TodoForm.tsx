@@ -10,11 +10,12 @@ import { TodoFormValues } from '@/shared/types';
 import { isValidDate, toKSTString } from '@/shared/utils/date';
 import { useStringParam } from '@/shared/hooks/useUrlParams';
 
-import { useTodoDetail } from '../hooks/useTodo';
+
 import { DEFAULT_TODO_PRIORITY, DEFAULT_TODO_STATUS, ROUTES, TODO_PRIORITY, TODO_PRIORITY_LABEL, TODO_STATUS, TODO_STATUS_LABEL } from '@/shared/constants';
 import TodoReplyRegist from './TodoReplyRegist';
 import TodoReplyList from './TodoReplyList';
 import { toast } from 'react-toastify';
+import { useTodoDetailHook } from '@/features/todo/hooks/useTodo';
 
 
 function validateTodoForm(values : TodoFormValues) {
@@ -39,7 +40,7 @@ export default function TodoForm() {
 
   let navigate = useNavigate();
   const id = useStringParam('id');
-  const {todo, isLoading, createTodo, updateTodo, createComment} = useTodoDetail(id);
+  const {todo, isLoading, createTodo, createComment, updateTodo} = useTodoDetailHook(id);
   
   const initialValues : TodoFormValues = {
     title : todo?.title || '',
@@ -66,7 +67,7 @@ export default function TodoForm() {
       }
       catch(error) {
         const message = error instanceof Error ? error.message : 'Unknown Error';
-        toast.error(message); // alert → toast로 교체
+        toast.error(message);
       }
     };
 

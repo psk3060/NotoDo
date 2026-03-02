@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from typing import List
 
+
 class TodoComment(BaseModel):
     commentId : Optional[str] = None
     todoId : Optional[str] = None
@@ -24,6 +25,19 @@ class Todo(BaseModel):
     userId : Optional[str] = None
     priority : Optional[str] = None
     comments : List[TodoComment] = Field(default_factory=list)
+
+class TodoListRequest(BaseModel):
+    currentPage : Optional[int] = 0
+    pageSize : Optional[int] = 0
+    title :Optional[str] = None
+    status: Optional[str] = None
+    priority : Optional[str] = None
+    userId : Optional[str] = None
+
+class TodoListResponse(BaseModel):
+    data : List[Todo] = []
+    total: Optional[int] = 0
+    totalPages: Optional[int] = 0
 
 
 # DB INSERT용 - Hook 수동 구현

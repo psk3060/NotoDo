@@ -1,6 +1,7 @@
-from model.todo.todo_model import TodoComment
+import math
+
+from model import Todo, TodoComment, TodoListRequest, TodoListResponse
 from service.todo_service import TodoService
-from model import Todo
 from typing import List
 
 class LocalTodoServiceImpl(TodoService):
@@ -10,9 +11,19 @@ class LocalTodoServiceImpl(TodoService):
         self.todo_list.append(Todo(id = "2", title = "Another Todo", status = "Pending", registDate = "2025-02-06 18:00", deadline = "2025-02-14", description = "This is another sample", userId = "demo"))
         self.todo_list.append(Todo(id = "3", title = "Yet Another Todo", status = "Pending", registDate = "2025-02-06 21:35", deadline = "2025-02-10", description = "This is yet another sample", userId = "demo"))
         
-    def read_todos(self, user_id : str) -> List[Todo]:
-        return [x for x in self.todo_list if x.userId == user_id]
-
+    def read_todos(self, user_id : str) -> TodoListResponse:
+        todos = [x for x in self.todo_list if x.userId == user_id]
+        total = len(todos)
+        return TodoListResponse(data = todos, total= total)
+    
+    def read_todos_with_paging(self, listRequest : TodoListRequest) -> TodoListResponse:
+        todos = [x for x in self.todo_list if x.userId == listRequest.userId]
+        total = len(todos)
+        start = (listRequest.currentPage - 1) * listRequest.pageSize
+        end = start + listRequest.pageSize
+        
+        return TodoListResponse(data = todos[start:end], total= total, totalPages=math.ceil(total / listRequest.pageSize))
+    
     def read_todo_detail(self, todo_id: int, user_id : str) -> Todo: 
         return [x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0]
     

@@ -39,7 +39,7 @@
 - [X] 서버 연동 : Access Token 재발급 로깅(MongoDB), IP 체크(Redis)
 - [X] Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
 - [X] Notion 연동 : 댓글 기능 추가
-- [ ] Notion 연동 : 필터링(상태별, 날짜별, 제목 + 내용 검색) 추가
+- [X] Notion 연동 : 필터링(상태별, 우선순위별, 제목 + 내용 검색) 추가, List 페이징
 - [ ] 서버 연동 : 자주 사용하는 필터링 조건 저장
 - [ ] Notion 연동 : 반복 작업 자동화
 - [ ] Notion 연동 : 동기화

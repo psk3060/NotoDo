@@ -1,7 +1,6 @@
-
-import TodoList from "@/features//todo/components/TodoList";
 import Login from "@/features/auth/components/Login";
 import TodoForm from "@/features/todo/components/TodoForm";
+import TodoListPaging from "@/features/todo/components/TodoListPaging";
 import ProtectedRoute from "@/shared/components/ProtectedRoute";
 import { ROUTES } from "@/shared/constants";
 import { ReactElement } from "react";
@@ -17,7 +16,7 @@ export const routes : RouteConfig[] = [
     , { path : ROUTES.LOGIN, element : <Login /> }
     , { path : ROUTES.TODOS, element : (
         <ProtectedRoute>
-            <TodoList />
+            <TodoListPaging />
         </ProtectedRoute>
     )}
     , { path : `${ROUTES.TODOS}/:id`, element : (

@@ -12,9 +12,19 @@ NOTION_STATUS_ID_MAP = {
     TodoStatus.COMPLETED: "klrZ",
 }
 
+NOTION_STATUS_VALUE_MAP = {
+    TodoStatus.PENDING: "미시작",
+    TodoStatus.IN_PROGRESS: "진행 중",
+    TodoStatus.COMPLETED: "완료",
+}
+
 def to_notion_status_id(status: TodoStatus | str) -> str:
     """Notodo status → Notion option id"""
     return NOTION_STATUS_ID_MAP[TodoStatus[status]]
+
+def to_notion_status_value(status: TodoStatus | str) -> str:
+    """List 시 사용 - Notodo status → Notion option value"""
+    return NOTION_STATUS_VALUE_MAP[TodoStatus[status]]
 
 # 매핑용 Map(Notion → Notodo )
 NOTION_STATUS_ID_REVERSE_MAP = {
