@@ -25,3 +25,9 @@ export interface PagedResponse<T> {
     message? : string;
     totalPages : number;
 }
+
+export interface SearchParam {
+    title: string,
+    status: string,
+    priority: string,
+}

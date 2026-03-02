@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import RedirectResponse
 
-from model import Todo, TodoComment
+from model import Todo, TodoComment, TodoListRequest
 from service.service_factory import get_todo_service
 
 import os
@@ -21,9 +21,14 @@ todo_service = get_todo_service(ENVIRONMENT)
 async def read_todos(
                 currentPage: int = Query(default=0),
                 pageSize: int = Query(default=10),
+                title : str = Query(default = ""),
+                priority : str = Query(default = ""),
+                status : str = Query(default = ""),
                 request: Request = None):
     
-    return await todo_service.read_todos_with_paging(request.state.user, currentPage, pageSize)
+    listRequest = TodoListRequest(currentPage=currentPage, pageSize=pageSize, userId = request.state.user, title = title, priority=priority, status = status)
+    
+    return await todo_service.read_todos_with_paging(listRequest)
     
     
 

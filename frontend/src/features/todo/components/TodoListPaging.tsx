@@ -1,18 +1,18 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPenToSquare, faTrash} from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faPenToSquare, faTrash, faSearch} from '@fortawesome/free-solid-svg-icons'
 
-import {useTodoList, useTodoListWithHook} from '@/features/todo/hooks/useTodo';
-import { useEffect, useState } from 'react';
+import {useTodoListWithHook} from '@/features/todo/hooks/useTodo';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROUTES } from '@/shared/constants';
+import { ROUTES, TODO_PRIORITY, TODO_PRIORITY_LABEL, TODO_STATUS, TODO_STATUS_LABEL } from '@/shared/constants';
 
 export default function TodoListPaging() {
     
     const navigate = useNavigate();
 
-    const [pageSize, setPageSize] = useState(3);
+    const [pageSize, setPageSize] = useState(10);
 
-    const { todos, isLoading, deleteTodo, currentPage, totalPages, setCurrentPage } = useTodoListWithHook(pageSize);
+    const { todos, isLoading, deleteTodo, currentPage, totalPages, setCurrentPage, searchParam, setSearchParam, applySearch, resetSearch } = useTodoListWithHook(pageSize);
 
     const handleCreate = () => {
         navigate(`${ROUTES.TODOS}/create`);
@@ -48,6 +48,65 @@ export default function TodoListPaging() {
     return (
         <div className="container todo-list w-75">
             <h2 className="text-center my-4">My Todo List</h2>
+
+            {/* 검색 영역 */}
+            <div className="row g-2 mb-3">
+                <div className="col-auto">
+                    <input 
+                        type="text" 
+                        className='form-control'
+                        placeholder='Title 검색'
+                        value={searchParam.title}
+                        onChange={(e) => setSearchParam(prev => ({...prev, title : e.target.value}))}
+                        onKeyDown={(e) => e.key === 'Enter' && applySearch()}
+                    />
+                </div>
+
+                <div className="col-auto">
+                    <select
+                        className='form-control'
+                        value={searchParam.priority}
+                        onChange={(e) => setSearchParam(prev => ({...prev, priority : e.target.value}))}
+                    >
+                        <option value="">전체 Priority</option>
+                        {Object.values(TODO_PRIORITY).map((p) => (
+                            <option key={p} value={p}>
+                                {TODO_PRIORITY_LABEL[p]}
+                            </option>
+                        ))}
+
+                    </select>
+                </div>
+                
+                <div className="col-auto">
+                    <select
+                        className='form-control'
+                        value={searchParam.status}
+                        onChange={(e) => setSearchParam(prev => ({...prev, status : e.target.value}))}
+                    >
+                        <option value="">전체 Status</option>
+                        {Object.values(TODO_STATUS).map((p) => (
+                            <option key={p} value={p}>
+                                {TODO_STATUS_LABEL[p]}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="col-auto ms-auto">
+                    <button className="btn btn-primary" onClick={applySearch}>
+                    <FontAwesomeIcon icon={faSearch} /> 검색
+                    </button>
+                </div>
+                <div className="col-auto">
+                    <button className="btn btn-outline-secondary" onClick={resetSearch}>
+                    초기화
+                    </button>
+                </div>
+
+            </div>
+            {/* 검색 영역 */}
+
 
             <table className="table table-striped">
                 <thead>

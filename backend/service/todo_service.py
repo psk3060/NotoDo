@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from model.todo.todo_model import TodoListResponse
+from model import TodoListRequest, TodoListResponse
 from model import Todo, TodoComment
 from typing import List
 
@@ -9,7 +9,7 @@ class TodoService(ABC):
         pass
     
     @abstractmethod
-    def read_todos_with_paging(user_id : str, currentPage : int, pageSize : int) -> TodoListResponse:
+    def read_todos_with_paging(listRequest : TodoListRequest) -> TodoListResponse:
         pass
     
     @abstractmethod

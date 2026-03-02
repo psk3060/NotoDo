@@ -3,7 +3,7 @@ import { useApiWithAuth } from "@/shared/hooks/useApiWithAuth";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import * as todoService from '@/features/todo/services/todoService';
-import { CreateTodoPayload, PagedResponse, Todo, TodoComment, UpdateTodoPayload } from "@/shared/types";
+import { CreateTodoPayload, SearchParam, Todo, TodoComment, UpdateTodoPayload } from "@/shared/types";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -63,15 +63,21 @@ export function useTodoListWithHook(pageSize : number) {
 
     const [currentPage, setCurrentPage] = useState(1);
 
+    const [searchParam, setSearchParam] = useState<SearchParam>({title: '', status: '', priority: ''});
+    // 검색버튼 클릭 시 반영
+    const [appliedSearchParam, setAppliedSearchParam] = useState<SearchParam>({ title: '', status: '', priority: '' });
+
     const {executeWithAuth} = useApiWithAuth();
     const queryClient = useQueryClient();
 
-    // pageSize 바뀌면 1페이지로 초기화
-    useEffect(() => { setCurrentPage(1);}, [pageSize]);
+    // pageSize, appliedSearchParam 바뀌면 1페이지로 초기화
+    useEffect(() => { setCurrentPage(1);}, [pageSize, appliedSearchParam]);
+
+    // 조회 시 1 페이지로 초기화
 
     const {data, isLoading : isFetching} = useQuery({
-        queryKey : ['todos', currentPage, pageSize],
-        queryFn: () => executeWithAuth(() => todoService.getAllTodosWithPaging(currentPage, pageSize)),
+        queryKey : ['todos', currentPage, pageSize, appliedSearchParam],
+        queryFn: () => executeWithAuth(() => todoService.getAllTodosWithPaging(currentPage, pageSize, appliedSearchParam)),
         throwOnError: () => {
             toast.error(TOAST_MESSAGES.TODO.FETCH_ALL_FAIL);
             return false;
@@ -108,7 +114,14 @@ export function useTodoListWithHook(pageSize : number) {
         currentPage,
         setCurrentPage,
         totalPages,
-        deleteTodo
+        deleteTodo,
+        searchParam,
+        setSearchParam,
+        applySearch: () => setAppliedSearchParam(searchParam),
+        resetSearch: () => {
+            setSearchParam({ title: '', status: '', priority: '' });
+            setAppliedSearchParam({ title: '', status: '', priority: '' });
+        }
     }
 
 }

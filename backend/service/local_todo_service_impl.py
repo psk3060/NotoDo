@@ -1,8 +1,7 @@
 import math
 
-from model.todo.todo_model import TodoComment, TodoListResponse
+from model import Todo, TodoComment, TodoListRequest, TodoListResponse
 from service.todo_service import TodoService
-from model import Todo
 from typing import List
 
 class LocalTodoServiceImpl(TodoService):
@@ -17,13 +16,13 @@ class LocalTodoServiceImpl(TodoService):
         total = len(todos)
         return TodoListResponse(data = todos, total= total)
     
-    def read_todos_with_paging(self, user_id : str, currentPage : int, pageSize : int) -> TodoListResponse:
-        todos = [x for x in self.todo_list if x.userId == user_id]
+    def read_todos_with_paging(self, listRequest : TodoListRequest) -> TodoListResponse:
+        todos = [x for x in self.todo_list if x.userId == listRequest.userId]
         total = len(todos)
-        start = (currentPage - 1) * pageSize
-        end = start + pageSize
+        start = (listRequest.currentPage - 1) * listRequest.pageSize
+        end = start + listRequest.pageSize
         
-        return TodoListResponse(data = todos[start:end], total= total, totalPages=math.ceil(total / pageSize))
+        return TodoListResponse(data = todos[start:end], total= total, totalPages=math.ceil(total / listRequest.pageSize))
     
     def read_todo_detail(self, todo_id: int, user_id : str) -> Todo: 
         return [x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0]

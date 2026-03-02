@@ -26,6 +26,13 @@ class Todo(BaseModel):
     priority : Optional[str] = None
     comments : List[TodoComment] = Field(default_factory=list)
 
+class TodoListRequest(BaseModel):
+    currentPage : Optional[int] = 0
+    pageSize : Optional[int] = 0
+    title :Optional[str] = None
+    status: Optional[str] = None
+    priority : Optional[str] = None
+    userId : Optional[str] = None
 
 class TodoListResponse(BaseModel):
     data : List[Todo] = []

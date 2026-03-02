@@ -1,13 +1,12 @@
 import math
 import os
-from model.todo.todo_model import TodoComment, TodoListResponse
 from model.todo.notion_todo_priority import from_notion_priority_id
 from model.todo.notion_todo_status import from_notion_status_id
 from utils.notion_util import get_date_time, get_date, get_select, get_select_name, get_status, get_status_name, get_text
 from fastapi import Depends
 from dotenv import load_dotenv
 from service.todo_service import TodoService
-from model import Todo, notion_state
+from model import Todo, notion_state, TodoComment, TodoListRequest, TodoListResponse
 from typing import List
 from service import NotionServiceImpl, get_notion_service
 
@@ -49,13 +48,23 @@ class ProdTodoServiceImpl(TodoService):
         
         return TodoListResponse(data = todos, total=len(todos))
 
-    async def read_todos_with_paging(self, user_id : str, currentPage : int, pageSize : int) -> TodoListResponse:
+    async def read_todos_with_paging(self, listRequest : TodoListRequest) -> TodoListResponse:
         todos = []
 
         if len(notion_state.data_sources) > 0:
             source = notion_state.data_sources[0]
-            
-        result = await self.notion_service.query_datasource(source["id"])
+        
+        filter = {}
+        
+        if listRequest :
+            if listRequest.title and listRequest.title != '':
+                filter['작업명'] = listRequest.title
+            if listRequest.priority and listRequest.priority != '':
+                filter['우선순위'] = listRequest.priority
+            if listRequest.status and listRequest.status != '':
+                filter['상태'] = listRequest.status
+        
+        result = await self.notion_service.query_datasource(source["id"], filter)
         
         pages = result['pages']
         
@@ -75,10 +84,10 @@ class ProdTodoServiceImpl(TodoService):
             
         
         total = len(todos)
-        start = (currentPage - 1) * pageSize
-        end = start + pageSize
+        start = (listRequest.currentPage - 1) * listRequest.pageSize
+        end = start + listRequest.pageSize
         
-        return TodoListResponse(data = todos[start:end], total= total, totalPages=math.ceil(total / pageSize))
+        return TodoListResponse(data = todos[start:end], total= total, totalPages=math.ceil(total / listRequest.pageSize))
         
     
     # 상세 조회
