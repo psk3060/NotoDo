@@ -14,11 +14,11 @@ async def get_db() -> AsyncSession:
 
 DATABASE_URL = URL.create(
     drivername="postgresql+asyncpg",
-    username=os.getenv('POSTGRE_DATABASE_USER', ''),
-    password=os.getenv('POSTGRE_DATABASE_PASSWORD', ''),
+    username=os.getenv('POSTGRE_DATABASE_USER'),
+    password=os.getenv('POSTGRE_DATABASE_PASSWORD'),
     host="localhost",
     port=5432,
-    database=os.getenv('POSTGRE_DATABASE_DB', ''),
+    database=os.getenv('POSTGRE_DATABASE_DB'),
 )
 
 engine = create_async_engine(DATABASE_URL, echo=True)

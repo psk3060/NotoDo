@@ -1,6 +1,18 @@
+from pydantic import BaseModel
+
 from beanie import Document
 from datetime import datetime
 from typing import Optional
+
+class RefreshTokenLogDTO(BaseModel):
+    user_id: str
+    token_hash: str
+    jti: str
+    issued_at: datetime
+    expires_at: datetime
+    ip: str | None
+    user_agent: str | None
+    issued_type: str
 
 class RefreshTokenLog(Document):
     user_id : str

@@ -2,12 +2,12 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 import os, jwt, json
-from service import AuthServiceImpl
+from service import JwtTokenServiceImpl
 
 class JWTMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         
-        authService = AuthServiceImpl()
+        authService = JwtTokenServiceImpl()
         
         force_logout = False
         

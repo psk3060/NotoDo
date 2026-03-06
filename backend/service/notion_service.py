@@ -1,6 +1,7 @@
-from utils.notion_util import get_date_time
-from model.todo.notion_todo_priority import to_notion_priority_id, to_notion_priority_value
-from model.todo.notion_todo_status import to_notion_status_id, to_notion_status_value
+from abc import ABC, abstractmethod
+
+from utils.notion_utils import get_date_time
+from utils.notion_convert_utils  import to_notion_status_id, to_notion_status_value, to_notion_priority_id, to_notion_priority_value
 from model.todo.todo_model import Todo, TodoComment
 import os, httpx
 import re, uuid
@@ -31,9 +32,40 @@ def get_notion_headers() -> dict:
     }
 
 def get_notion_service() :
-    return NotionServiceImpl()
+    return NotionApiServiceImpl()
 
-class NotionServiceImpl:
+class NotionService(ABC):
+    
+    @abstractmethod
+    def retrieve_database() -> NotionState:
+        pass
+    
+    @abstractmethod
+    def query_datasource(data_source_id : str, filter: dict | None = None) -> dict :
+        pass
+    
+    @abstractmethod
+    def retrieve_page(page_id : str) -> dict : 
+        pass
+    
+    @abstractmethod
+    def create_page(todo : Todo) -> dict :
+        pass
+    
+    @abstractmethod
+    def patch_page(todo_id : str, todo : Todo | None = None, is_trash : bool | None = False) -> dict :
+        pass
+    
+    @abstractmethod
+    def retrieve_reply_list( page_id : str) -> list:
+        pass
+    
+    @abstractmethod
+    def create_reply(comment : TodoComment) -> dict :
+        pass
+
+
+class NotionApiServiceImpl(NotionService):
     def __init__(self):
         self.headers = get_notion_headers()
         self.client = httpx.AsyncClient(headers=self.headers)
@@ -193,13 +225,22 @@ class NotionServiceImpl:
             "properties": properties
         }
         
+        create_response = None
+        
         try :
-            await self.post(url, json = payload)
+            create_response = await self.post(url, json = payload)
         except HTTPStatusError as e:
             raise e
         
+        if create_response and "id" in create_response:
+            create_id = create_response["id"]
         
-    async def patch_page(self, todo_id : str, todo : Todo | None = None, is_trash : bool | None = False) :
+        return {
+            "isSuccess" : True,
+            "id" : create_id
+        }
+        
+    async def patch_page(self, todo_id : str, todo : Todo | None = None, is_trash : bool | None = False) -> dict :
         
         url = f"https://api.notion.com/v1/pages/{todo_id}"
         
@@ -239,6 +280,12 @@ class NotionServiceImpl:
             await self.patch(url, json = payload)
         except HTTPStatusError as e:
             raise e
+        
+        # TODO
+        return {
+            "isSuccess" : True,
+            "message" : ""
+        }
     
     async def retrieve_reply_list(self, page_id : str):
         url = f"https://api.notion.com/v1/comments?block_id={page_id}"
@@ -260,7 +307,7 @@ class NotionServiceImpl:
             print(e)
             return []
         
-    async def create_reply(self, comment : TodoComment) :
+    async def create_reply(self, comment : TodoComment) -> dict :
         
         url = "https://api.notion.com/v1/comments"
         
@@ -282,3 +329,9 @@ class NotionServiceImpl:
             await self.post(url, json = payload)
         except HTTPStatusError as e:
             raise e
+        
+        # TODO
+        return {
+            "isSuccess" : True,
+            "message" : ""
+        }
