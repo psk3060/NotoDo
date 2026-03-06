@@ -1,7 +1,7 @@
 # NotoDo
 
 > FastAPI 기반 Notion 할 일 연동 REST API + React(TypeScript) SPA<br />
-> Primary DB 기반 아키텍처로 확장 예정 (Notion은 외부 Sync 대상으로 활용)
+> 초기 Notion 단일 구조에서 PostgreSQL 중심 아키텍처로 전환 중
 
 ## 📌 Project Overview
 <p>NotoDo는 Notion과 연동되는 TODO 관리 시스템</p>
@@ -10,23 +10,26 @@
   <thead>
     <tr>
       <th>단계</th>
-      <th>Primary</th>
-      <th>Secondary(Sync Target)</th>
+      <th>쓰기 흐름</th>
+      <th>읽기 기준</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td>Before</td>
+      <td>Notion 직접 저장</td>
       <td>Notion</td>
-      <td>-</td>
     </tr>
     <tr>
       <td>After</td>
+      <td>Notion 선행 저장 → 응답받은 Notion ID를 DB에 INSERT</td>
       <td>PostgreSQL</td>
-      <td>Notion</td>
     </tr>
   </tbody>
 </table>
+
+> Notion의 쓰기 속도가 빠르고 ID 체계가 달라, 쓰기 시 Notion을 선행한 뒤 응답 ID를 DB에 저장하는 방식을 채택했습니다.
+> 두 저장소 간 정합성은 메시지 큐로 유지합니다.
 
 ****
 
@@ -79,20 +82,22 @@
 - Notion 연동 : 필터링(상태별, 우선순위별, 제목 + 내용 검색) 추가, List 페이징
 
 ### 🔄 In Progress (Architecture Upgrade)
-- [ ] Notion : Primary → Secondary(Sync), DB를 Primary로 (PostgreSQL 중심 구조)
-- [ ] 서버 연동 : 자주 사용하는 필터링 조건 저장
+- Notion Primary → Secondary 전환 (PostgreSQL 중심 구조로 재설계)
+  - 쓰기: Notion 선행 저장 후 응답 ID를 DB에 INSERT
+  - 읽기: PostgreSQL 기준 조회
+  - 메시지 큐를 통한 두 저장소 간 정합성 유지
+- 서버 연동 : 자주 사용하는 필터링 조건 저장
 
 ### 🔮 고도화
-- [ ] Notion 연동 : 통계 대시보드
-- [ ] Notion 연동 : 오프라인 모드
-- [ ] 메시지 큐 기반 동기화 설계
+- Notion 연동 : 통계 대시보드
+- Notion 연동 : 오프라인 모드
 
 ### ⏸️ On Hold (중단 항목)
-- Notion 연동 : OAUTH2 인증
-  - public 통합 설정 필요하지만, 회사 관련 사항 입력 필수
-- Notion 연동 : WebSocket 연동하여 노션 변경사항 실시간 반영
-  - 웹훅은 SSL 활성화 URL 필요
-- v0에서 생성한 디자인 적용
-  - 부트스트랩 활용
-- Notion 연동 : 사용자 정보와 연동(Notion User_Id)
-  - 다른 계정으로 로그인하여, 공용 영역에 작성 및 수정해보았으나 created_by와 last_edited_by 모두 동일(해당 기능 의미 없음)
+- **Notion OAuth2 인증**
+  - Public 통합 설정 시 회사 관련 정보 입력 필수로 보류
+- **Notion Webhook 실시간 반영**
+  - Webhook 수신에 SSL 활성화 URL이 필요하나, 포트폴리오 특성상 SSL 미적용으로 보류
+  - 실시간 훅 대신 메시지 큐 기반 비동기 전달 방식으로 대체
+- **v0 디자인 적용 (부트스트랩 활용)**
+- **Notion 사용자 정보 연동 (Notion User\_Id)**
+  - 다른 계정으로 로그인하여 공용 영역에 작성·수정해보았으나 `created_by` / `last_edited_by` 모두 동일 계정으로 반환

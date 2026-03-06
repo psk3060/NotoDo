@@ -17,7 +17,7 @@ import redis.asyncio as redis
 from config.redis_setup import redis_container
 from config.postgre_setup import engine, Base
 
-from service.notion_service_impl import NotionServiceImpl
+from service.notion_service import NotionApiServiceImpl
 
 
 
@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
     
     # Notion 연동
     if os.getenv('TODO_ENV', 'local') == 'prod':
-        notion_service = NotionServiceImpl()
+        notion_service = NotionApiServiceImpl()
         # Retrieve a database에서 DATABASE_ID 입력하여, data_sources 목록 조회
         await notion_service.retrieve_database()
 
