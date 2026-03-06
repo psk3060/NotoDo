@@ -154,7 +154,11 @@ export default function TodoListPaging() {
                 </tbody>
             </table>
             
+                
+
             {/* 페이지네이션 */}
+
+            { todos.length > 0 && 
             <div className="d-flex justify-content-center mt-3">
                 <ul className="pagination">
                     <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
@@ -177,7 +181,7 @@ export default function TodoListPaging() {
                         </li>
                     ))}
 
-                    {/* 뒤 생략 */}
+                    
                     {getPageRange(currentPage, totalPages).at(-1)! < totalPages && (
                         <li className="page-item disabled">
                             <span className="page-link">...</span>
@@ -192,7 +196,7 @@ export default function TodoListPaging() {
                     </li>
                 </ul>
             </div>
-
+            }
             <div className="text-end mt-4 me-3">
                 <button className="btn btn-primary" onClick={handleCreate}><FontAwesomeIcon icon={faPlus} />New Todo</button>
             </div>
