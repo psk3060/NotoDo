@@ -2,9 +2,10 @@ from abc import ABC, abstractmethod
 
 from utils.notion_utils import get_date_time
 from utils.notion_convert_utils  import to_notion_status_id, to_notion_status_value, to_notion_priority_id, to_notion_priority_value
+from utils.string_utils import ensure_uuid
+
 from model.todo.todo_model import Todo, TodoComment
 import os, httpx
-import re, uuid
 from dotenv import load_dotenv
 
 from model import NotionState, notion_state
@@ -17,12 +18,7 @@ NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 NOTION_VERSION = os.getenv("NOTION_VERSION")
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 
-UUID_PATTERN = re.compile(r"^[0-9a-fA-F-]{32,36}$")
 
-def ensure_uuid(val: str) -> str:
-    if UUID_PATTERN.fullmatch(val):
-        return val
-    return str(uuid.uuid4())
 
 def get_notion_headers() -> dict:
     return {
@@ -325,13 +321,18 @@ class NotionApiServiceImpl(NotionService):
             }
         }
 
+        create_response = None
+        
         try :
-            await self.post(url, json = payload)
+            create_response = await self.post(url, json = payload)
         except HTTPStatusError as e:
             raise e
+        
+        if create_response and "id" in create_response:
+            create_id = create_response["id"]
         
         # TODO
         return {
             "isSuccess" : True,
-            "message" : ""
+            "commentId" : create_id
         }

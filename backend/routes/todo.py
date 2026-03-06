@@ -6,7 +6,7 @@ from config.postgre_setup import get_db
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 
-from service import TodoService, LocalTodoServiceImpl, NotionTodoServiceImpl, DbTodoServiceImpl
+from service import TodoService, LocalTodoServiceImpl, NotionTodoServiceImpl, DbTodoServiceImpl, HybridTodoServiceImpl
 from service import get_notion_service
 
 from model import Todo, TodoComment, TodoListRequest
@@ -29,6 +29,8 @@ def get_todo_service(
     if ENVIRONMENT == "local":
         return LocalTodoServiceImpl()
     elif ENVIRONMENT == "prod":
+        return HybridTodoServiceImpl(notion_service=get_notion_service(), todo_repository=TodoRepository(session))
+    elif ENVIRONMENT == "db_prod":
         return DbTodoServiceImpl(TodoRepository(session))
     elif ENVIRONMENT == "notion_prod":
         return NotionTodoServiceImpl(get_notion_service())

@@ -4,7 +4,7 @@ import uuid
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 from service.notion_service import NotionService
-from utils.notion_convert_utils import from_notion_status_id, from_notion_priority_id, to_notion_status_id, to_notion_priority_id, to_notion_status_value, to_notion_priority_value
+from utils.notion_convert_utils import from_notion_status_id, from_notion_priority_id, to_notion_status_id, to_notion_priority_id, sync_notion_status, sync_notion_priority
 from repository.todo_repository import TodoRepository
 from model import TodoListRequest, TodoListResponse
 from model import Todo, TodoComment
@@ -12,7 +12,6 @@ from model import notion_state
 from datetime import datetime, timezone, timedelta
 
 from utils.notion_utils import get_date_time, get_date, get_select, get_select_name, get_status, get_status_name, get_text
-
 
 load_dotenv()
 
@@ -207,12 +206,11 @@ class DbTodoServiceImpl(TodoService):
     def __init__(self, todo_repository : TodoRepository):
         self.todo_repository = todo_repository
     
-    
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         temp_result = await self.todo_repository.select_list(listRequest)
         
         converted_data = [
-            item.model_copy(update={"status": to_notion_status_value(from_notion_status_id(item.status)), "priority" : to_notion_priority_value(from_notion_priority_id(item.priority))})
+            item.model_copy(update={"status": sync_notion_status(item.status), "priority" : sync_notion_priority(item.priority)})
             for item in temp_result.data
         ]
 
@@ -228,8 +226,6 @@ class DbTodoServiceImpl(TodoService):
         todo.priority = to_notion_priority_id(todo.priority)
         
         return await self.todo_repository.create_todo(todo)
-    
-    
     
     # 상세 조회
     async def read_todo_detail(self, todo_id: str, user_id : str):
@@ -263,3 +259,71 @@ class DbTodoServiceImpl(TodoService):
         comment.isTrash = False
         
         await self.todo_repository.create_todo_comment(comment)
+
+
+
+class HybridTodoServiceImpl(TodoService) :
+    def __init__(self, notion_service: NotionService, todo_repository : TodoRepository):
+        self.notion_service = notion_service
+        self.todo_repository = todo_repository
+        
+    async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
+        '''읽기 : DB'''
+        
+        temp_result = await self.todo_repository.select_list(listRequest)
+        
+        converted_data = [
+            item.model_copy(update={"status": sync_notion_status(item.status), "priority" : sync_notion_priority(item.priority)})
+            for item in temp_result.data
+        ]
+
+        return TodoListResponse(
+            data=converted_data,
+            total=temp_result.total,
+            totalPages=temp_result.totalPages
+        )
+        
+    async def create_todo(self, todo : Todo):
+        '''등록 : 노션 → DB(메시징큐 미사용)'''
+        notion_response = await self.notion_service.create_page(todo)
+        
+        if notion_response["isSuccess"] and "id" in notion_response and notion_response["id"] != '':
+            id = notion_response["id"]
+            
+            todo.id = id
+            
+            todo.status = to_notion_status_id(todo.status)
+            todo.priority = to_notion_priority_id(todo.priority)
+        
+            await self.todo_repository.create_todo(todo)
+    
+    async def read_todo_detail(self, todo_id: str, user_id : str):
+        '''읽기 : DB(차후 노션도 추가 검토 - 상세 읽기는 속도 괜찮은 편)'''
+        temp_result = await self.todo_repository.select_by_id(todo_id, user_id)
+        
+        if temp_result:
+            temp_result.registDate = temp_result.registDate.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
+            temp_result.status = from_notion_status_id(temp_result.status)
+            temp_result.priority = from_notion_priority_id(temp_result.priority)
+        
+        return temp_result
+    
+    def delete_todo(self, todo_id : str, user_id : str) :
+        '''삭제 : DB → 노션(메시징큐 사용)'''
+        pass
+    
+    def update_todo(self, todo_id : str, todo_update: Todo) :
+        '''수정 : DB → 노션(메시징큐 사용)'''
+        pass
+    
+    async def create_comment(self, comment : TodoComment) :
+        '''등록 : 노션 → DB(메시징큐 미사용)'''
+        notion_response = await self.notion_service.create_reply(comment)
+        
+        if notion_response["isSuccess"] and "commentId" in notion_response and notion_response["commentId"] != '':
+            comment.commentId = notion_response["commentId"]
+            comment.isTrash = False    
+
+            await self.todo_repository.create_todo_comment(comment)
+            
+        
