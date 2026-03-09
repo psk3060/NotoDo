@@ -10,15 +10,15 @@ class RefreshTokenLogRepository:
         await RefreshTokenLog(**dto.model_dump(), revoked=False).insert()
     
     
-    async def revoke(self, revoke_reason : str, user_id : str, token_hash : str | None = None, jti : str | None = None) :
+    async def revoke(self, revoke_reason : str, user_id : str, refresh_token_hash : str | None = None, refresh_token_jti : str | None = None) :
         tokens = None
         
         # 로그아웃, 재발급으로 인한 refresh_token revoke
         if revoke_reason in ['refresh', 'logout'] :
             tokens = await RefreshTokenLog.find(
                 RefreshTokenLog.user_id == user_id,
-                RefreshTokenLog.token_hash == token_hash,
-                RefreshTokenLog.jti == jti,
+                RefreshTokenLog.refresh_token_hash == refresh_token_hash,
+                RefreshTokenLog.refresh_token_jti == refresh_token_jti,
                 RefreshTokenLog.revoked == False
             ).to_list()
         # 로그인 시 기존 refresh_token 모두 revoke

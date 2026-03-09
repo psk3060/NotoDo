@@ -5,22 +5,26 @@ from datetime import datetime
 from typing import Optional
 
 class RefreshTokenLogDTO(BaseModel):
-    user_id: str
-    token_hash: str
-    jti: str
-    issued_at: datetime
-    expires_at: datetime
-    ip: str | None
-    user_agent: str | None
-    issued_type: str
+    user_id: Optional[str] = None
+    refresh_token_jti: Optional[str] = None
+    refresh_token_hash: Optional[str] = None
+    access_token_jti : Optional[str] = None
+    access_token_hash : Optional[str] = None
+    issued_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    ip: Optional[str] = None
+    user_agent: Optional[str] = None
+    issued_type: Optional[str] = None
 
 class RefreshTokenLog(Document):
-    user_id : str
-    jti : str
-    token_hash : str
-    issued_at : datetime
-    expires_at : datetime
-    revoked : bool = False
+    user_id : Optional[str] = None
+    refresh_token_jti : Optional[str] = None
+    refresh_token_hash : Optional[str] = None
+    access_token_jti : Optional[str] = None
+    access_token_hash : Optional[str] = None
+    issued_at : Optional[datetime] = None
+    expires_at : Optional[datetime] = None
+    revoked : Optional[bool] = False
     revoked_at : Optional[datetime] = None
     revoked_reason : Optional[str] = None
     ip : Optional[str] = None

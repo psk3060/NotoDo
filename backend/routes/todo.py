@@ -1,6 +1,6 @@
 import os
 
-from repository.todo_repository import TodoRepository
+from repository import TodoRepository, TodoOutboxRepository
 from config.postgre_setup import get_db
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -29,7 +29,10 @@ def get_todo_service(
     if ENVIRONMENT == "local":
         return LocalTodoServiceImpl()
     elif ENVIRONMENT == "prod":
-        return HybridTodoServiceImpl(notion_service=get_notion_service(), todo_repository=TodoRepository(session))
+        return HybridTodoServiceImpl(
+            notion_service=get_notion_service()
+            , todo_repository=TodoRepository(session)
+            , outbox_repository=TodoOutboxRepository)
     elif ENVIRONMENT == "db_prod":
         return DbTodoServiceImpl(TodoRepository(session))
     elif ENVIRONMENT == "notion_prod":
@@ -70,9 +73,11 @@ async def read_todo_detail(todo_id: str, request: Request, todo_service : TodoSe
 @router.post("")
 async def create_todo(todo : Todo, request: Request, todo_service : TodoService = Depends(get_todo_service)):
     
+    access_token = request.cookies.get("access_token")
+    
     todo.userId = request.state.user
     
-    await todo_service.create_todo(todo) 
+    await todo_service.create_todo(todo, access_token) 
 
 @router.delete("/{todo_id}")
 async def delete_todo(todo_id : str, request: Request, todo_service : TodoService = Depends(get_todo_service)) :

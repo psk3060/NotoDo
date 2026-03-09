@@ -7,7 +7,7 @@ from typing import List
 
 class TodoComment(BaseModel):
     commentId : Optional[str] = None
-    id : Optional[str] = None
+    todoId : Optional[str] = None
     lastModified : Optional[str] = None
     author : Optional[str] = None
     commentText : Optional[str] = None
@@ -18,7 +18,7 @@ class TodoComment(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
 class Todo(BaseModel):
-    id:Optional[str] = None
+    todoId:Optional[str] = None
     title: Optional[str] = None
     status: Optional[str] = None
     registDate:Optional[datetime] = None

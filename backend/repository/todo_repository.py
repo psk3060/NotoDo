@@ -70,7 +70,7 @@ class TodoRepository:
     async def create_todo(self, todo : Todo) : 
         # 1. Todo → TodoBase 생성
         todo_entity = TodoBase(
-            id = todo.id,
+            todoId = todo.todoId,
             title = todo.title,
             status = todo.status,
             priority = todo.priority,
@@ -83,13 +83,17 @@ class TodoRepository:
         self.session.add(todo_entity)
         
         # 3. Commit
-        await self.session.commit()
+        await self.session.flush()
+        
+        await self.session.refresh(todo_entity)
+        
+        return todo_entity
         
     
     async def select_by_id(self, todo_id, user_id) :
         
         stmt = select(TodoBase).where(and_(
-                TodoBase.id == todo_id,
+                TodoBase.todoId == todo_id,
                 TodoBase.userId == user_id
         )).options(selectinload(TodoBase.comments))
         
@@ -108,7 +112,7 @@ class TodoRepository:
         await self.session.execute(
             update(TodoBase)
                 .where(and_(
-                    TodoBase.id == todo_id,
+                    TodoBase.todoId == todo_id,
                     TodoBase.userId == todo_update.userId
                 ))
                 .values(
@@ -127,7 +131,7 @@ class TodoRepository:
         await self.session.execute(
             update(TodoBase)
                 .where(and_(
-                    TodoBase.id == todo.id,
+                    TodoBase.todoId == todo.todoId,
                     TodoBase.userId == todo.userId
                 ))
                 .values(isTrash = True, trashDate = datetime.now())
@@ -139,7 +143,7 @@ class TodoRepository:
         
         comment_entity = TodoCommentBase(
             commentId = comment.commentId, 
-            id = comment.id,
+            todoId = comment.todoId,
             author = comment.author,
             commentText = comment.commentText,
             isTrash = comment.isTrash,
@@ -150,3 +154,10 @@ class TodoRepository:
         
         # 3. Commit
         await self.session.commit()
+        
+    async def commit(self) -> None:
+        await self.session.commit()
+
+    async def rollback(self) -> None:
+        await self.session.rollback()
+    
