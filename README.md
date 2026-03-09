@@ -86,11 +86,11 @@
 {
   "todo_id": 1,
   "notion_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "event_type": "created",
+  "event_type": "create",
   "processed": true,
-  "user_id": "user_id",
-  "token_jti": "abc123",
-  "payload": { "title": "운동하기", "status": "todo" },
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "payload": { "title": "운동하기", ... },
   "created_at": "2026-03-09T10:00:00Z"
 }
 
@@ -98,11 +98,11 @@
 {
   "todo_id": 1,
   "notion_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-  "event_type": "updated",
+  "event_type": "update",
   "processed": false,
-  "user_id": "user_id",
-  "token_jti": "abc123",
-  "payload": { "status": "done" },
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "payload": { "title": "공부하기", ... },
   "created_at": "2026-03-09T11:00:00Z"
 }
 ```
