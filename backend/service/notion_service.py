@@ -334,5 +334,5 @@ class NotionApiServiceImpl(NotionService):
         # TODO
         return {
             "isSuccess" : True,
-            "commentId" : create_id
+            "id" : create_id
         }

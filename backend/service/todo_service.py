@@ -4,10 +4,10 @@ import uuid, json
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 
+from utils.token_utils import decodeAccessToken
 from service.notion_service import NotionService
-from service.token_service import JwtTokenServiceImpl
-from model.todo.todo_outbox_model import TodoOutboxDTO
-from utils.notion_convert_utils import from_notion_status_id, from_notion_priority_id, to_notion_status_id, to_notion_priority_id, sync_notion_status, sync_notion_priority
+from model.todo.todo_outbox_model import TodoCommentOutboxDTO, TodoOutboxDTO
+from utils.notion_convert_utils import from_notion_status_id, from_notion_priority_id, to_notion_status_id, to_notion_priority_id, sync_notion_status, sync_notion_priority, to_notion_status_value, to_notion_priority_value
 from repository import TodoRepository, TodoOutboxRepository
 from model import TodoListRequest, TodoListResponse
 from model import Todo, TodoComment
@@ -32,15 +32,15 @@ class TodoService(ABC):
         pass
 
     @abstractmethod
-    def delete_todo(todo_id : str, user_id : str = None) :
+    def delete_todo(todo_id : str, user_id : str = None, access_token : str = None) :
         pass
     
     @abstractmethod
-    def update_todo(todo_id : str, todo_update: Todo) :
+    def update_todo(todo_id : str, todo_update: Todo, access_token : str = None) :
         pass
     
     @abstractmethod
-    def create_comment(comment : TodoComment) :
+    def create_comment(comment : TodoComment, access_token : str = None) :
         pass
     
 
@@ -271,40 +271,48 @@ class HybridTodoServiceImpl(TodoService) :
         self.todo_repository = todo_repository
         self.outbox_repository = outbox_repository
         
-        
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
-        '''읽기 : DB'''
+        total = 0
+        totalPages = 0
+        converted_data = []
         
-        temp_result = await self.todo_repository.select_list(listRequest)
+        try :
+            '''읽기 : DB'''
+            temp_result = await self.todo_repository.select_list(listRequest)
+            
+            converted_data = [
+                item.model_copy(update={"status": to_notion_status_value(item.status), "priority" : to_notion_priority_value(item.priority)})
+                for item in temp_result.data
+            ]
+            
+            total = temp_result.total
+            totalPages =temp_result.totalPages
+            
+        except Exception as e:
+            print(e)
+            
         
-        converted_data = [
-            item.model_copy(update={"status": sync_notion_status(item.status), "priority" : sync_notion_priority(item.priority)})
-            for item in temp_result.data
-        ]
-
         return TodoListResponse(
-            data=converted_data,
-            total=temp_result.total,
-            totalPages=temp_result.totalPages
-        )
+                data=converted_data,
+                total=total,
+                totalPages=totalPages
+            )
         
     async def create_todo(self, todo : Todo, access_token : str = None):
         '''등록 : 노션 → DB(메시징큐 미사용)'''
-        
-        notion_response = await self.notion_service.create_page(todo)
-        
-        authService = JwtTokenServiceImpl()
         
         try :
             
             if not access_token:
                 raise Exception("접근 권한이 없습니다.")
 
-            access_token_payload = json.loads(authService.decodeToken(access_token))
+            access_token_payload = json.loads(decodeAccessToken(access_token))
             
             if "jti" not in access_token_payload :
                 raise Exception("노션 등록에 실패하였습니다.")
             
+            notion_response = await self.notion_service.create_page(todo)
+
             if not notion_response["isSuccess"]:
                 raise Exception("노션 등록에 실패하였습니다.")
             
@@ -315,63 +323,189 @@ class HybridTodoServiceImpl(TodoService) :
                 raise Exception("노션 등록에 실패하였습니다.")
             
             todo.todoId = notion_response["id"]
-            todo.status = to_notion_status_id(todo.status)
-            todo.priority = to_notion_priority_id(todo.priority)
             
-            created = await self.todo_repository.create_todo(todo)
+            created_entity = await self.todo_repository.create_todo(todo)
             
-            if created.id <= 0 :
+            if created_entity.id <= 0 :
                 raise Exception("일정 등록에 실패하였습니다.")
             
             await self.outbox_repository.insert(
                 dto = TodoOutboxDTO(
-                    todo_id = created.id, 
-                    notion_id = todo.todoId, 
-                    event_type = 'create', 
-                    user_id = todo.userId, 
+                    db_id = created_entity.id, 
+                    todo_id = created_entity.todoId, 
+                    event_type = 'created', 
+                    user_id = created_entity.userId, 
                     token_jti = access_token_payload["jti"], 
-                    payload = todo
+                    payload = {
+                        "before": None,
+                        "after":  self.todo_repository.to_dict(created_entity)
+                    }
                 ), 
                 processed = True
             )
+            
             await self.todo_repository.commit()
         except:
             await self.todo_repository.rollback()
             
-            # 보상 트랜잭션 - Notion에서 삭제
+            # 노션에서 삭제
             self.notion_service.patch_page(todo.todoId, todo, True)
             
-            raise
+            # TODO 실패 시 outbox 처리
             
             
     
     async def read_todo_detail(self, todo_id: str, user_id : str):
         '''읽기 : DB(차후 노션도 추가 검토 - 상세 읽기는 속도 괜찮은 편)'''
-        temp_result = await self.todo_repository.select_by_id(todo_id, user_id)
-        
-        if temp_result:
-            temp_result.registDate = temp_result.registDate.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
-            temp_result.status = from_notion_status_id(temp_result.status)
-            temp_result.priority = from_notion_priority_id(temp_result.priority)
-        
-        return temp_result
+        return await self.todo_repository.select_by_id(todo_id, user_id)
     
-    def delete_todo(self, todo_id : str, user_id : str) :
-        '''삭제 : DB → 노션(메시징큐 사용)'''
-        pass
-    
-    def update_todo(self, todo_id : str, todo_update: Todo) :
+    async def update_todo(self, todo_id : str, todo_update: Todo, access_token : str = None) :
         '''수정 : DB → 노션(메시징큐 사용)'''
-        pass
-    
-    async def create_comment(self, comment : TodoComment) :
-        '''등록 : 노션 → DB(메시징큐 미사용)'''
-        notion_response = await self.notion_service.create_reply(comment)
         
-        if notion_response["isSuccess"] and "commentId" in notion_response and notion_response["commentId"] != '':
-            comment.commentId = notion_response["commentId"]
-            comment.isTrash = False    
-
-            await self.todo_repository.create_todo_comment(comment)
+        try :
             
+            if not access_token:
+                raise Exception("접근 권한이 없습니다.")
+
+            access_token_payload = json.loads(decodeAccessToken(access_token))
+            
+            if "jti" not in access_token_payload :
+                raise Exception("노션 등록에 실패하였습니다.")
+            
+            before_entity = await self.todo_repository.select_by_id(todo_id, todo_update.userId)
+            
+            if before_entity is None:
+                raise Exception("조회된 데이터가 없습니다.")
+            
+            # 수정 후 Entity
+            updated_entity = await self.todo_repository.update(todo_id, todo_update)
+            
+            # outbox 등록
+            await self.outbox_repository.insert(
+                dto = TodoOutboxDTO(
+                    db_id = updated_entity.id,
+                    todo_id = updated_entity.todoId, 
+                    event_type = 'updated', 
+                    user_id = updated_entity.userId, 
+                    token_jti = access_token_payload["jti"], 
+                    payload = {
+                        "before": self.todo_repository.to_dict(before_entity),
+                        "after":  self.todo_repository.to_dict(updated_entity)
+                    }
+                ), 
+                processed = False
+            )
+            
+            await self.todo_repository.commit()
+            
+        except Exception as e:
+            print(e)
+            await self.todo_repository.rollback()
+            
+            # TODO 실패 시 outbox 처리
+            
+            
+    
+    
+    async def delete_todo(self, todo_id : str, user_id : str, access_token : str = None) :
+        '''삭제 : DB → 노션(메시징큐 사용)'''
+        try :
+            if not access_token:
+                raise Exception("접근 권한이 없습니다.")
+
+            access_token_payload = json.loads(decodeAccessToken(access_token))
+            
+            if "jti" not in access_token_payload :
+                raise Exception("노션 등록에 실패하였습니다.")
+            
+            before_entity = await self.todo_repository.select_by_id(todo_id, user_id)
+            
+            if before_entity is None:
+                raise Exception("조회된 데이터가 없습니다.")
+            
+            deleted_entity = await self.todo_repository.delete(todo_id, user_id)
+            
+            await self.outbox_repository.insert(
+                dto = TodoOutboxDTO(
+                    db_id = deleted_entity.id,
+                    todo_id = deleted_entity.todoId, 
+                    event_type = 'deleted', 
+                    user_id = deleted_entity.userId, 
+                    token_jti = access_token_payload["jti"], 
+                    payload = {
+                        "before": self.todo_repository.to_dict(deleted_entity),
+                        "after":  None
+                    }
+                ), 
+                processed = False
+            )
+            
+            await self.todo_repository.commit()
+            
+        except Exception as e:
+            print(e)
+            await self.todo_repository.rollback()
+            
+            # TODO 실패 시 outbox 처리
+            
+            
+            
+    
+    
+    async def create_comment(self, comment : TodoComment, access_token : str = None) :
+        '''댓글 등록 : 예외 발생 시 DB Rollback만'''
         
+        try :
+            
+            if not access_token:
+                raise Exception("접근 권한이 없습니다.")
+
+            access_token_payload = json.loads(decodeAccessToken(access_token))
+            
+            if "jti" not in access_token_payload :
+                raise Exception("노션 등록에 실패하였습니다.")
+            
+            notion_response = await self.notion_service.create_reply(comment)
+            
+            if not notion_response["isSuccess"]:
+                raise Exception("노션 등록에 실패하였습니다.")
+            
+            if "id" not in notion_response:
+                raise Exception("노션 등록에 실패하였습니다.")
+            
+            if notion_response["id"] == '':
+                raise Exception("노션 등록에 실패하였습니다.")
+            
+            comment.commentId = notion_response["id"]
+            comment.isTrash = False    
+            
+            created_entity = await self.todo_repository.create_todo_comment(comment)
+            
+            if created_entity.id <= 0 :
+                raise Exception("답글 등록에 실패하였습니다.")
+            
+            await self.outbox_repository.insert(
+                dto = TodoCommentOutboxDTO(
+                    db_id = created_entity.id,
+                    todo_id = created_entity.todoId, 
+                    comment_id = created_entity.commentId,
+                    event_type = 'created', 
+                    token_jti = access_token_payload["jti"], 
+                    payload = {
+                        "before": None,
+                        "after":  self.todo_repository.to_comment_dict(created_entity)
+                    }
+                ), 
+                processed = True
+            )
+            
+            
+            await self.todo_repository.commit()
+        except Exception as e:
+            print(e)
+            '''노션에는 delete comment가 존재하지 않기 때문에 실패 시 rollback만 존재'''
+            await self.todo_repository.rollback()
+
+            # TODO 실패 시 outbox 처리
+            
+            

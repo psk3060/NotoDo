@@ -1,13 +1,12 @@
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
-import os, jwt, json
-from service import JwtTokenServiceImpl
+import jwt, json
+from utils.token_utils import decodeAccessToken
+
 
 class JWTMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        
-        authService = JwtTokenServiceImpl()
         
         force_logout = False
         
@@ -26,8 +25,9 @@ class JWTMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=401,content={"code" : "empty_token", "message" : "토큰이 비어있습니다."})
         
         try :
+            
             # 1. Token 검증(만료, 유효성, 기타 에러만 검증)
-            json_data = json.loads(authService.decodeToken(access_token))
+            json_data = json.loads(decodeAccessToken(access_token, 'jwt'))
 
             token_type = json_data["type"]
             

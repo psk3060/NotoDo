@@ -1,4 +1,4 @@
-import os, jwt, uuid, json, logging
+import os, jwt, uuid, logging
 
 from abc import ABC, abstractmethod
 from fastapi import HTTPException, Response, Request
@@ -15,10 +15,8 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-def get_token_service():
-    # TODO 환경변수
-    token_type = 'jwt'
-    
+def get_token_service(token_type : str | None = 'jwt'):
+    # token_type 환경변수로
     if token_type == 'jwt':
         return JwtTokenServiceImpl(RefreshTokenLogRepository())
     
@@ -33,10 +31,6 @@ class TokenService(ABC):
         pass
     
     @abstractmethod
-    def decodeToken(self, token : str) -> str:
-        pass
-    
-    @abstractmethod
     def revoke_refresh_token(self, refresh_token : str):
         pass
     
@@ -48,7 +42,9 @@ class TokenService(ABC):
 class JwtTokenServiceImpl(TokenService):
     
     def __init__(self, refresh_token_log_repo: RefreshTokenLogRepository | None = None):
-        self.refresh_token_log_repo = refresh_token_log_repo
+        
+        if refresh_token_log_repo:
+            self.refresh_token_log_repo = refresh_token_log_repo
     
     def saveCookie(self, token_type : str, token : str, response : Response) : 
         '''쿠키에 저장 - JWT일 경우'''
@@ -96,7 +92,7 @@ class JwtTokenServiceImpl(TokenService):
             
         
         if token_type == "access":
-            expire = datetime.now(timezone.utc) + timedelta(minutes=1) # minutes=15
+            expire = datetime.now(timezone.utc) + timedelta(minutes=15) # minutes=15
         elif token_type == "refresh":
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         else :
@@ -230,29 +226,6 @@ class JwtTokenServiceImpl(TokenService):
         
         await self.refresh_token_log_repo.revoke(revoke_reason="login", user_id = user_id)
         
-    
-    def decodeToken(self, token : str) -> str:
-        SECRET_KEY = os.getenv('ACCESS_TOKEN_SECRET_KEY')
-        TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM') 
-        TOKEN_ISSUER = os.getenv('TOKEN_ISSUER', 'localhost')
-        
-        try:
-            
-            if not SECRET_KEY:
-                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
-            
-            if not TOKEN_ALGORITHM:
-                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
-
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM], issuer = TOKEN_ISSUER)
-            
-            payload["code"] = "success"
-            payload["message"] = "토큰이 정상적으로 인코딩 되었습니다."
-            
-            return json.dumps(payload)
-        
-        except Exception as e:
-            raise e
     
     
     async def revoke_refresh_token(self, refresh_token : str):

@@ -1,6 +1,6 @@
 import os
 
-from model.todo.todo_outbox_model import TodoOutbox
+from model.todo.todo_outbox_model import TodoCommentOutbox, TodoOutbox
 from model import RefreshTokenLog
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
         f"?authMechanism=DEFAULT&authSource={os.getenv('MONGO_DATABASE_NAME', '')}"
     )
     
-    await init_beanie(database=client.get_default_database(), document_models=[RefreshTokenLog, TodoOutbox])
+    await init_beanie(database=client.get_default_database(), document_models=[RefreshTokenLog, TodoOutbox, TodoCommentOutbox])
     # MongoDB Client 생성
     
     # refresh token용 redis 컨테이너
