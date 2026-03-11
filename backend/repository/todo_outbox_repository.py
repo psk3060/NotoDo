@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 
-from model.todo.todo_outbox_model import TodoOutbox, TodoOutboxDTO
+from model.todo.todo_outbox_model import TodoCommentOutboxDTO, TodoOutbox, TodoOutboxDTO, TodoCommentOutbox
 
 class TodoOutboxRepository : 
     async def insert(dto : TodoOutboxDTO, processed: bool) :
-        await TodoOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now(timezone.utc)).insert()
+        await TodoOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now()).insert()
         
     
+    async def insertComment(dto : TodoCommentOutboxDTO, processed : bool):
+        await TodoCommentOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now()).insert()
