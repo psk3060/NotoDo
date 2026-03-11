@@ -90,7 +90,7 @@
   "processed": true,
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-  "payload": { "title": "운동하기", ... },
+  "payload": { "before" : None, "after": {...} },
   "created_at": "2026-03-09T10:00:00Z"
 }
 
@@ -102,7 +102,7 @@
   "processed": false,
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-  "payload": { "title": "공부하기", ... },
+  "payload": { "before" : {...}, "after": {...} },
   "created_at": "2026-03-09T11:00:00Z"
 }
 ```
