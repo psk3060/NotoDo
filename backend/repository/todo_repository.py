@@ -5,6 +5,8 @@ from sqlalchemy import func, select, update, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from utils.notion_convert_utils import to_notion_status_id, to_notion_priority_id
+
 from model import Todo, TodoComment
 from model import TodoBase, TodoCommentBase
 from model import TodoListRequest, TodoListResponse
@@ -70,7 +72,7 @@ class TodoRepository:
     async def create_todo(self, todo : Todo) : 
         # 1. Todo → TodoBase 생성
         todo_entity = TodoBase(
-            id = todo.id,
+            todoId = todo.todoId,
             title = todo.title,
             status = todo.status,
             priority = todo.priority,
@@ -82,14 +84,30 @@ class TodoRepository:
         # 2. Insert
         self.session.add(todo_entity)
         
-        # 3. Commit
-        await self.session.commit()
+        # 3. flush
+        await self.session.flush()
+        
+        # 반환 받기(Service에서 Commit)
+        await self.session.refresh(todo_entity)
+        
+        return todo_entity
+        
+    
+    async def select_object_by_id(self, todo_id, user_id) :
+        stmt = select(TodoBase).where(and_(
+                TodoBase.todoId == todo_id,
+                TodoBase.userId == user_id
+        ))
+        
+        result = await self.session.execute(stmt)
+        
+        return result.scalar_one_or_none()
         
     
     async def select_by_id(self, todo_id, user_id) :
         
         stmt = select(TodoBase).where(and_(
-                TodoBase.id == todo_id,
+                TodoBase.todoId == todo_id,
                 TodoBase.userId == user_id
         )).options(selectinload(TodoBase.comments))
         
@@ -104,42 +122,47 @@ class TodoRepository:
         
         return response
     
-    async def update(self, todo_id, todo_update: Todo):
-        await self.session.execute(
-            update(TodoBase)
-                .where(and_(
-                    TodoBase.id == todo_id,
-                    TodoBase.userId == todo_update.userId
-                ))
-                .values(
-                    title = todo_update.title,
-                    priority = todo_update.priority,
-                    status = todo_update.status,
-                    description = todo_update.description,
-                    deadline = todo_update.deadline
-                )
-        )
+    async def update(self, todo_id : str, todo_update: Todo):
         
-        await self.session.commit()
+        todo_entity = await self.select_object_by_id(todo_id, todo_update.userId)
         
-    async def delete(self, todo : Todo ) :
+        if todo_entity is None:
+            raise Exception()
         
-        await self.session.execute(
-            update(TodoBase)
-                .where(and_(
-                    TodoBase.id == todo.id,
-                    TodoBase.userId == todo.userId
-                ))
-                .values(isTrash = True, trashDate = datetime.now())
-        )
+        todo_entity.title = todo_update.title
+        todo_entity.priority = todo_update.priority
+        todo_entity.status = todo_update.status
+        todo_entity.description = todo_update.description
+        todo_entity.deadline = todo_update.deadline
         
-        await self.session.commit()
+        # 3. flush
+        await self.session.flush()
+        await self.session.refresh(todo_entity)
         
-    async def create_todo_comment(self, comment : TodoComment) :
+        return todo_entity
+        
+    async def delete(self, todo_id, user_id ) :
+        
+        todo_entity = await self.select_object_by_id(todo_id, user_id)
+        
+        if todo_entity is None:
+            raise Exception()
+            
+        todo_entity.isTrash = True
+        todo_entity.trashDate = datetime.now()
+        
+        await self.session.flush()
+        await self.session.refresh(todo_entity)
+        
+        return todo_entity
+    
+    
+        
+    async def create_todo_comment(self, comment : TodoComment) -> TodoCommentBase :
         
         comment_entity = TodoCommentBase(
             commentId = comment.commentId, 
-            id = comment.id,
+            todoId = comment.todoId,
             author = comment.author,
             commentText = comment.commentText,
             isTrash = comment.isTrash,
@@ -148,5 +171,37 @@ class TodoRepository:
         
         self.session.add(comment_entity)
         
-        # 3. Commit
+        # 3. flush
+        await self.session.flush()
+        
+        # 반환 받기(Service에서 Commit)
+        await self.session.refresh(comment_entity)
+        
+        return comment_entity
+        
+
+    def to_dict(self, entity: TodoBase) -> dict:
+        return {
+            "title":       entity.title,
+            "priority":    to_notion_priority_id(entity.priority),
+            "status":      to_notion_status_id(entity.status),
+            "description": entity.description,
+            "deadline":    entity.deadline,
+        }
+    
+    def to_comment_dict(self, entity : TodoCommentBase) -> dict:
+        return {
+            "author" : entity.author,
+            "commentText" : entity.commentText
+        }
+    
+        
+        
+    async def commit(self) -> None:
         await self.session.commit()
+
+    async def rollback(self) -> None:
+        await self.session.rollback()
+    
+    
+    

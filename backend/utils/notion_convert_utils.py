@@ -81,4 +81,10 @@ NOTION_STATUS_ID_REVERSE_MAP = {
 def from_notion_status_id(option_id: str) -> str:
     """Notion option id → Notodo status"""
     return NOTION_STATUS_ID_REVERSE_MAP[option_id].name
+
+def sync_notion_status(status) :
+    return to_notion_status_value(from_notion_status_id(status))
+    
+def sync_notion_priority(priority) :
+    return to_notion_priority_value(from_notion_priority_id(priority))
     

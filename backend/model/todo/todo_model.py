@@ -1,13 +1,17 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from typing import List
 
+from pydantic import field_validator
+
+KST = timezone(timedelta(hours=9))
+
 
 class TodoComment(BaseModel):
     commentId : Optional[str] = None
-    id : Optional[str] = None
+    todoId : Optional[str] = None
     lastModified : Optional[str] = None
     author : Optional[str] = None
     commentText : Optional[str] = None
@@ -17,11 +21,21 @@ class TodoComment(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
     
+    @field_validator("lastModified", mode = "before")
+    def convert_to_kst(cls, v):
+        if v is None:
+            return None  # None 처리
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                v = v.replace(tzinfo=timezone.utc)
+            return v.astimezone(KST).strftime("%Y-%m-%d %H:%M")
+        return v
+    
 class Todo(BaseModel):
-    id:Optional[str] = None
+    todoId:Optional[str] = None
     title: Optional[str] = None
     status: Optional[str] = None
-    registDate:Optional[datetime] = None
+    registDate:Optional[str] = None
     deadline:Optional[str] = None
     description: Optional[str] = None
     userId : Optional[str] = None
@@ -31,6 +45,16 @@ class Todo(BaseModel):
     comments : List[TodoComment] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True, frozen=False)
+    
+    @field_validator("registDate", mode = "before")
+    def convert_to_kst(cls, v):
+        if v is None:
+            return None  # None 처리
+        if isinstance(v, datetime):
+            if v.tzinfo is None:
+                v = v.replace(tzinfo=timezone.utc)
+            return v.astimezone(KST).strftime("%Y-%m-%d %H:%M")
+        return v
     
 class TodoListRequest(BaseModel):
     currentPage : Optional[int] = 0

@@ -1,7 +1,7 @@
 import { TodoComment } from "@/shared/types";
 
 type Props = {
-  comments: TodoComment[];
+    comments: TodoComment[];
 };
 
 
@@ -33,7 +33,5 @@ export default function TodoReplyList({comments} : Props) {
                 )
             }
         </div>
-        
-       
     );
 }

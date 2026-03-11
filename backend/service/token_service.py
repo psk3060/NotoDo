@@ -1,11 +1,11 @@
-import os, jwt, uuid, json, logging
+import os, jwt, uuid, logging
 
 from abc import ABC, abstractmethod
 from fastapi import HTTPException, Response, Request
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
-from model.auth.refresh_token_log import RefreshTokenLog, RefreshTokenLogDTO
+from model.auth.refresh_token_log import RefreshTokenLogDTO
 from repository.token_repository import RefreshTokenLogRepository
 from config.redis_setup import redis_container
 
@@ -15,10 +15,8 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-def get_token_service():
-    # TODO 환경변수
-    token_type = 'jwt'
-    
+def get_token_service(token_type : str | None = 'jwt'):
+    # token_type 환경변수로
     if token_type == 'jwt':
         return JwtTokenServiceImpl(RefreshTokenLogRepository())
     
@@ -33,10 +31,6 @@ class TokenService(ABC):
         pass
     
     @abstractmethod
-    def decodeToken(self, token : str) -> str:
-        pass
-    
-    @abstractmethod
     def revoke_refresh_token(self, refresh_token : str):
         pass
     
@@ -48,7 +42,9 @@ class TokenService(ABC):
 class JwtTokenServiceImpl(TokenService):
     
     def __init__(self, refresh_token_log_repo: RefreshTokenLogRepository | None = None):
-        self.refresh_token_log_repo = refresh_token_log_repo
+        
+        if refresh_token_log_repo:
+            self.refresh_token_log_repo = refresh_token_log_repo
     
     def saveCookie(self, token_type : str, token : str, response : Response) : 
         '''쿠키에 저장 - JWT일 경우'''
@@ -96,7 +92,7 @@ class JwtTokenServiceImpl(TokenService):
             
         
         if token_type == "access":
-            expire = datetime.now(timezone.utc) + timedelta(minutes=1) # minutes=15
+            expire = datetime.now(timezone.utc) + timedelta(minutes=15) # minutes=15
         elif token_type == "refresh":
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         else :
@@ -160,7 +156,7 @@ class JwtTokenServiceImpl(TokenService):
         
         ''' Token 생성
             1. 생성 기준
-                - 로그인 할 때마다
+                - 로그인 할 때마다(기존 모두 미사용 처리 이후 신규 발급)
                 - Refresh Token 갱신 할 때마다
             2. 세션 정책 : 단일 세션 정책(전부 제거)
                 - 다중 세션 정책 → 동일 device_id만 제거(다중 디바이스 관리 시)
@@ -173,18 +169,20 @@ class JwtTokenServiceImpl(TokenService):
         token_pair = self.generateTokenPair(user_id)
         
         refresh_token = token_pair["refresh_token"]
-        
+        access_token = token_pair["access_token"]
         # payload 조회
         refresh_payload = jwt.decode(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY'), algorithms=[os.getenv('TOKEN_ALGORITHM')])
+        
+        access_payload = jwt.decode(access_token, os.getenv('ACCESS_TOKEN_SECRET_KEY'), algorithms=[os.getenv('TOKEN_ALGORITHM')])
         
         payload_user_id = refresh_payload['user_id']
         
         # 해시 생성
-        token_hash = hash_token(refresh_token)
+        refresh_token_hash = hash_token(refresh_token)
         key = f"refresh:{payload_user_id}:{refresh_payload['jti']}"
         
         # Redis에 저장(TTL = 7일)
-        await redis_container.refresh.set(key, token_hash, ex=60*60*24*7)
+        await redis_container.refresh.set(key, refresh_token_hash, ex=60*60*24*7)
         
         # TODO
         is_save_token_history = True
@@ -193,8 +191,10 @@ class JwtTokenServiceImpl(TokenService):
             await self.refresh_token_log_repo.insert(
                 RefreshTokenLogDTO(
                     user_id = user_id
-                    , token_hash = token_hash
-                    , jti = refresh_payload['jti']
+                    , refresh_token_hash = refresh_token_hash
+                    , refresh_token_jti = refresh_payload['jti']
+                    , access_token_hash = hash_token(access_token)
+                    , access_token_jti = access_payload['jti']
                     , issued_at = datetime.fromtimestamp(refresh_payload["iat"]).isoformat()
                     , expires_at=datetime.fromtimestamp(refresh_payload["exp"]).isoformat()
                     , ip=request.client.host if request else None
@@ -204,7 +204,7 @@ class JwtTokenServiceImpl(TokenService):
             ) 
         
         # Save Cookie
-        self.saveCookie('access', token_pair["access_token"], response)
+        self.saveCookie('access', access_token, response)
         self.saveCookie('refresh', refresh_token, response)
         
     
@@ -226,31 +226,6 @@ class JwtTokenServiceImpl(TokenService):
         
         await self.refresh_token_log_repo.revoke(revoke_reason="login", user_id = user_id)
         
-        
-    
-    
-    def decodeToken(self, token : str) -> str:
-        SECRET_KEY = os.getenv('ACCESS_TOKEN_SECRET_KEY', '')
-        TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
-        TOKEN_ISSUER = os.getenv('TOKEN_ISSUER', 'localhost')
-        
-        try:
-            
-            if not SECRET_KEY:
-                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
-            
-            if not TOKEN_ALGORITHM:
-                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
-
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM], issuer = TOKEN_ISSUER)
-            
-            payload["code"] = "success"
-            payload["message"] = "토큰이 정상적으로 인코딩 되었습니다."
-            
-            return json.dumps(payload)
-        
-        except Exception as e:
-            raise e
     
     
     async def revoke_refresh_token(self, refresh_token : str):
@@ -264,7 +239,7 @@ class JwtTokenServiceImpl(TokenService):
             if not TOKEN_ALGORITHM:
                 raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
             
-            token_hash = hash_token(refresh_token)
+            refresh_token_hash = hash_token(refresh_token)
             
             payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
 
@@ -278,12 +253,12 @@ class JwtTokenServiceImpl(TokenService):
             if isinstance(stored_hash, bytes):
                 stored_hash = stored_hash.decode()
 
-            if stored_hash != token_hash:
+            if stored_hash != refresh_token_hash:
                 raise Exception("Refresh Token이 일치하지 않습니다.")
             
             user_id = payload.get("user_id")
             
-            await self.refresh_token_log_repo.revoke(revoke_reason = "logout", user_id=user_id, token_hash = token_hash, jti = payload['jti'])
+            await self.refresh_token_log_repo.revoke(revoke_reason = "logout", user_id=user_id, refresh_token_hash = refresh_token_hash, refresh_token_jti = payload['jti'])
             
         except Exception as e:
             print(e)
@@ -301,7 +276,7 @@ class JwtTokenServiceImpl(TokenService):
             if not TOKEN_ALGORITHM:
                 raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
             
-            token_hash : str = hash_token(refresh_token)
+            refresh_token_hash : str = hash_token(refresh_token)
             
             payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
 
@@ -315,12 +290,12 @@ class JwtTokenServiceImpl(TokenService):
             if isinstance(stored_hash, bytes):
                 stored_hash = stored_hash.decode()
 
-            if stored_hash != token_hash:
+            if stored_hash != refresh_token_hash:
                 raise Exception("Refresh Token이 일치하지 않습니다.")
             
             user_id = payload.get("user_id")
             
-            await self.refresh_token_log_repo.revoke(revoke_reason = "refresh", user_id=user_id, token_hash = token_hash, jti = payload['jti'])
+            await self.refresh_token_log_repo.revoke(revoke_reason = "refresh", user_id=user_id, refresh_token_hash = refresh_token_hash, refresh_token_jti = payload['jti'])
             
             # 토큰 발급(DB, Redis, 쿠키에 저장하는 로직도 있기 때문에 saveToken)
             await self.saveToken(user_id, 'refresh', request, response)

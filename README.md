@@ -21,15 +21,21 @@
       <td>Notion</td>
     </tr>
     <tr>
-      <td>After</td>
-      <td>Notion 선행 저장 → 응답받은 Notion ID를 DB에 INSERT</td>
+      <td>After(등록)</td>
+      <td>Notion 선행 저장 → 응답받은 Notion ID를 PostgreSQL에 INSERT → Outbox 기록 (processed=True)</td>
+      <td>PostgreSQL</td>
+    </tr>
+    <tr>
+      <td>After(수정/삭제)</td>
+      <td>PostgreSQL 선행 반영 → Outbox 기록 (processed=False) → Celery Worker가 Notion 비동기 동기화</td>
       <td>PostgreSQL</td>
     </tr>
   </tbody>
 </table>
 
-> Notion의 쓰기 속도가 빠르고 ID 체계가 달라, 쓰기 시 Notion을 선행한 뒤 응답 ID를 DB에 저장하는 방식을 채택했습니다.
-> 두 저장소 간 정합성은 메시지 큐로 유지합니다.
+> 등록: Notion ID 체계상 Notion을 선행 저장하여 ID를 발급받은 뒤 PostgreSQL에 저장합니다. Outbox에는 processed=True로 기록하여 감사 이력을 유지합니다.<br />
+> 수정/삭제: PostgreSQL을 선행 반영 후 Outbox에 processed=False로 기록합니다. Celery Worker가 비동기로 Notion에 동기화하며, 완료 시 processed=True로 업데이트합니다.<br />
+> Notion 위치: ID 발급 주체(등록) + 단방향 동기화 대상(Sync Target, 수정/삭제)
 
 ****
 
@@ -42,6 +48,7 @@
 - **Validation**: Pydantic
 - **Authentication**: JWT Access/Refresh(Refresh Token Rotation + Redis 저장 + 토큰 갱신 이력 Trace)
 - **API**: RESTful API
+- **Async Task**: Celery (Outbox Poller + Notion 동기화 Worker + Retry)
 
 ### Frontend
 - **Framework**: React
@@ -57,12 +64,48 @@
 - Redis
     - IP(접근 권한)
     - Refresh Token(Refresh Token Active)
+    - (Planned) Celery 메시지 브로커 1단계 (→ 이후 RabbitMQ로 교체 예정)
 - MongoDB(Beanie)
     - Refresh Token 발급 이력
     - 로그인 시도 이력(성공 / 실패)
     - 기능 접근 이력(성공 / 실패)
-
+    - (Planned) Outbox 이벤트 로그 (Notion 동기화 이력, Audit Trail)
 ***
+
+## 🗂 Outbox 이벤트 로그 구조 (MongoDB)
+> 모든 CUD 이벤트를 기록하여 감사 추적(Audit Trail)을 완전하게 유지합니다.
+
+| 작업 | processed 초기값 | Notion 동기화 주체 |
+|---|---|---|
+| 등록 (INSERT) | `True` | Notion 선행 처리 (동기) |
+| 수정 (UPDATE) | `False` | Celery Worker (비동기) |
+| 삭제 (DELETE) | `False` | Celery Worker (비동기) |
+
+```json
+// 등록 예시
+{
+  "todo_id": 1,
+  "notion_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "event_type": "create",
+  "processed": true,
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "payload": { "title": "운동하기", ... },
+  "created_at": "2026-03-09T10:00:00Z"
+}
+
+// 수정 예시
+{
+  "todo_id": 1,
+  "notion_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "event_type": "update",
+  "processed": false,
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "payload": { "title": "공부하기", ... },
+  "created_at": "2026-03-09T11:00:00Z"
+}
+```
 
 ## 🛠 Roadmap
 
@@ -82,13 +125,21 @@
 - Notion 연동 : 필터링(상태별, 우선순위별, 제목 + 내용 검색) 추가, List 페이징
 
 ### 🔄 In Progress (Architecture Upgrade)
-- Notion Primary → Secondary 전환 (PostgreSQL 중심 구조로 재설계)
-  - 쓰기: Notion 선행 저장 후 응답 ID를 DB에 INSERT
-  - 읽기: PostgreSQL 기준 조회
-  - 메시지 큐를 통한 두 저장소 간 정합성 유지
+- **Notion Primary → Secondary 전환** (PostgreSQL 중심 구조로 재설계)
+  - 등록: Notion 선행 저장 → notion_id 발급 → PostgreSQL INSERT → Outbox 기록 (processed=True)
+  - 수정/삭제: PostgreSQL 선행 반영 → Outbox 기록 (processed=False) → Celery Worker 비동기 동기화
+  - 읽기: PostgreSQL 기준 조회 (/todos 응답 속도 개선)
+- **Outbox Pattern 도입** (MongoDB `outbox_events` 컬렉션)
+  - 모든 CUD 이벤트 기록으로 감사 추적 (Audit Trail) 완전 유지
+  - processed=False 건은 Celery Beat가 주기적으로 재시도
+- **Celery 도입** (Outbox Poller + Notion 동기화 Worker)
+  - 브로커: Redis (1단계) → RabbitMQ 교체 예정 (AMQP 학습 목적)
+  - Retry: Exponential Backoff, 최대 5회
 - 서버 연동 : 자주 사용하는 필터링 조건 저장
 
+
 ### 🔮 고도화
+- Notion 연동 : 댓글 작성 시 파일 업로드
 - Notion 연동 : 통계 대시보드
 - Notion 연동 : 오프라인 모드
 

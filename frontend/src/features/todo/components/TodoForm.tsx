@@ -39,8 +39,8 @@ function validateTodoForm(values : TodoFormValues) {
 export default function TodoForm() {
 
   let navigate = useNavigate();
-  const id = useStringParam('id');
-  const {todo, isLoading, createTodo, createComment, updateTodo} = useTodoDetailHook(id);
+  const todoId = useStringParam('id');
+  const {todo, isLoading, createTodo, createComment, updateTodo} = useTodoDetailHook(todoId);
   
   const initialValues : TodoFormValues = {
     title : todo?.title || '',
@@ -54,13 +54,13 @@ export default function TodoForm() {
   const handleReplyRegist = async (author : string, commentText : string) => {
 
       try {
-        if (id === 'create' || !todo) {
+        if (todoId === 'create' || !todo) {
             throw Error('잘못된 접근입니다.');
         }
 
         await createComment({
           author : author,
-          todoId : todo.id,
+          todoId : todo.todoId,
           commentText : commentText
         });
 
@@ -77,7 +77,7 @@ export default function TodoForm() {
   
   const handleSubmit = async (values : TodoFormValues) => {
     try {
-      if(id === 'create') {
+      if(todoId === 'create') {
         await createTodo({
           title : values.title,
           status : values.status,
@@ -88,7 +88,7 @@ export default function TodoForm() {
       }
       else {
         await updateTodo({
-          id,
+          todoId,
           title : values.title,
           status : values.status,
           registDate : values.registDate,
@@ -115,7 +115,7 @@ export default function TodoForm() {
 
   return (
     <div className="container">
-      <h2 className="text-center my-4">{id === 'create' ? 'Create Todo' : 'Edit Todo'}</h2>
+      <h2 className="text-center my-4">{todoId === 'create' ? 'Create Todo' : 'Edit Todo'}</h2>
 
       <Formik<TodoFormValues>
         initialValues={initialValues}

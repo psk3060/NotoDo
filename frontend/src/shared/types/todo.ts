@@ -1,5 +1,5 @@
 export interface Todo {
-    id : string;
+    todoId : string;
     title : string;
     status : string;
     registDate? : string;
@@ -10,7 +10,7 @@ export interface Todo {
 }
 
 export interface TodoListItem {
-    id : string;
+    todoId : string;
     title : string; 
     registDate : string;
     status : string;
@@ -28,11 +28,11 @@ export interface TodoFormValues {
 }
 
 export interface CreateTodoPayload {
-  title: string;
-  status: string;
-  deadline: string;
-  description: string;
-  priority:string;
+    title: string;
+    status: string;
+    deadline: string;
+    description: string;
+    priority:string;
 }
 
 export interface TodoComment {

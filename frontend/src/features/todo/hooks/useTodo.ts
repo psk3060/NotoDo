@@ -234,7 +234,7 @@ export function useTodoDetail(id : string) {
 }
 
 
-export function useTodoDetailHook(id : string) {
+export function useTodoDetailHook(todoId : string) {
     const queryClient = useQueryClient();
     
     const {executeWithAuth} = useApiWithAuth();
@@ -243,8 +243,8 @@ export function useTodoDetailHook(id : string) {
     const [isCommenting, setIsCommenting] = useState(false);
 
     const { data : todo, isLoading: isFetching } = useQuery({
-        queryKey : ['todo', id],
-        queryFn : () => executeWithAuth(() => todoService.getTodoById(id)),
+        queryKey : ['todo', todoId],
+        queryFn : () => executeWithAuth(() => todoService.getTodoById(todoId)),
         staleTime: 0,
         refetchOnMount: true,
         refetchOnWindowFocus: false,
@@ -264,7 +264,7 @@ export function useTodoDetailHook(id : string) {
     });
 
     const {mutate : updateTodo, isPending : isUpdating} = useMutation({
-        mutationFn : (payload : UpdateTodoPayload) => executeWithAuth(() => todoService.updateTodo(id, payload)),
+        mutationFn : (payload : UpdateTodoPayload) => executeWithAuth(() => todoService.updateTodo(todoId, payload)),
         throwOnError: true,
         onSuccess : () => {
             toast.success(TOAST_MESSAGES.TODO.UPDATE_SUCCESS);
