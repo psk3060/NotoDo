@@ -484,7 +484,7 @@ class HybridTodoServiceImpl(TodoService) :
             if created_entity.id <= 0 :
                 raise Exception("답글 등록에 실패하였습니다.")
             
-            await self.outbox_repository.insert(
+            await self.outbox_repository.insertComment(
                 dto = TodoCommentOutboxDTO(
                     db_id = created_entity.id,
                     todo_id = created_entity.todoId, 
