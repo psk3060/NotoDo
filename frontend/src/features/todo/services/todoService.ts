@@ -29,21 +29,21 @@ export async function getAllTodosWithPaging(currentPage : number, pageSize : num
 }
 
 
-export async function deleteTodo(id : string) : Promise<void> {
+export async function deleteTodo(todoId : string) : Promise<void> {
     if(ENV.IS_DEV) {
-        return mockDeleteTodo(id);
+        return mockDeleteTodo(todoId);
     }
 
-    await apiClient.delete(API_ENDPOINTS.TODOS.BY_ID(id));
+    await apiClient.delete(API_ENDPOINTS.TODOS.BY_ID(todoId));
 }
 
-export async function getTodoById(id : string) : Promise <Todo | null> {
+export async function getTodoById(todoId : string) : Promise <Todo | null> {
     if(ENV.IS_DEV) {
-        return mockGetTodoById(id);
+        return mockGetTodoById(todoId);
 
     }
 
-    const response = await apiClient.get<Todo>(API_ENDPOINTS.TODOS.BY_ID(id));
+    const response = await apiClient.get<Todo>(API_ENDPOINTS.TODOS.BY_ID(todoId));
     return response.data;
 }
 
@@ -62,13 +62,13 @@ export async function createTodo(payload : CreateTodoPayload) : Promise<void> {
 
 }
 
-export async function updateTodo(id:string, payload : UpdateTodoPayload) : Promise<void> {
+export async function updateTodo(todoId:string, payload : UpdateTodoPayload) : Promise<void> {
     if( ENV.IS_DEV ) {
-        return mockUpdateTodo(id, payload);
+        return mockUpdateTodo(todoId, payload);
         
     }
 
-    await apiClient.put(API_ENDPOINTS.TODOS.BY_ID(id), payload);
+    await apiClient.put(API_ENDPOINTS.TODOS.BY_ID(todoId), payload);
 }
 
 export async function createTodoComment(comment : TodoComment) : Promise<void> {
@@ -109,15 +109,15 @@ function mockGetAllTodosWithPaging(page : number, pageSize : number, searchParam
     };
 }
 
-function mockGetTodoById(id : string) : Todo | null {
-    return todoStore.getState().selectById(id) || null;
+function mockGetTodoById(todoId : string) : Todo | null {
+    return todoStore.getState().selectById(todoId) || null;
 }
 
 function mockCreateTodo(payload : CreateTodoPayload) : void {
     const store = todoStore.getState();
     
     const newTodo : Todo = {
-        id: generateId(),
+        todoId: generateId(),
         ...payload,
         registDate : getCurrentTimestamp()
     };
@@ -140,9 +140,9 @@ function mockCreateTodoComment(comment : TodoComment) : void {
 }
 
 
-function mockUpdateTodo(id : string, payload : UpdateTodoPayload) : void {
+function mockUpdateTodo(todoId : string, payload : UpdateTodoPayload) : void {
     const store = todoStore.getState();
-    const todo = store.selectById(id);
+    const todo = store.selectById(todoId);
 
     if(todo) {
         const updatedTodo : Todo = {
@@ -154,6 +154,6 @@ function mockUpdateTodo(id : string, payload : UpdateTodoPayload) : void {
     }
 }
 
-function mockDeleteTodo(id : string) : void {
-    todoStore.getState().deleteById(id);
+function mockDeleteTodo(todoId : string) : void {
+    todoStore.getState().deleteById(todoId);
 }

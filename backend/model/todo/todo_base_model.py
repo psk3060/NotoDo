@@ -13,7 +13,7 @@ class TodoBase(Base):
     id : Mapped[int] = mapped_column('id', primary_key=True)
     todoId : Mapped[str] = mapped_column("todo_id", String(50), unique=True)
     title : Mapped[str] = mapped_column("todo_title", String(50))
-    status : Mapped[str] = mapped_column("todo_status", String(10))
+    status : Mapped[str] = mapped_column("todo_status", String(12))
     registDate : Mapped[datetime] = mapped_column("regist_date", DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     lastModified : Mapped[Optional[datetime]] = mapped_column("last_modified", DateTime(timezone=True))
     deadline : Mapped[Optional[str]] = mapped_column("deadline", String(14))

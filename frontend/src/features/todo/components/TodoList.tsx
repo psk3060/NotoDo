@@ -60,7 +60,7 @@ export default function TodoList() {
                         </tr>
                     ) : (
                         todos.map((todo, index) => (
-                            <tr key={todo.id}>
+                            <tr key={todo.todoId}>
                                 <td>{index + 1}</td>
                                 <td>{todo.priority}</td>
                                 <td>{todo.title}</td>
@@ -68,8 +68,8 @@ export default function TodoList() {
                                 <td>{todo.status}</td>          
                                 <td>{todo.deadline}</td>
                                 <td>
-                                    <button className="btn btn-sm btn-outline-warning me-2" onClick={() => handleEdit(todo.id)}><FontAwesomeIcon icon={faPenToSquare} /> Edit</button>
-                                    <button className="btn btn-sm btn-outline-danger" onClick={() => deleteHandle(todo.id)}><FontAwesomeIcon icon={faTrash} />Delete</button>
+                                    <button className="btn btn-sm btn-outline-warning me-2" onClick={() => handleEdit(todo.todoId)}><FontAwesomeIcon icon={faPenToSquare} /> Edit</button>
+                                    <button className="btn btn-sm btn-outline-danger" onClick={() => deleteHandle(todo.todoId)}><FontAwesomeIcon icon={faTrash} />Delete</button>
                                 </td>
                             </tr>
                         ))

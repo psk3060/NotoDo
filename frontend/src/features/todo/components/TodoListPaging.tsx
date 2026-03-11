@@ -18,13 +18,13 @@ export default function TodoListPaging() {
         navigate(`${ROUTES.TODOS}/create`);
     }
 
-    const handleEdit = async (id : string) => {
-        navigate(`/todos/${id}`);
+    const handleEdit = async (todoId : string) => {
+        navigate(`/todos/${todoId}`);
     }
 
-    const deleteHandle = async (id : string) => {
+    const deleteHandle = async (todoId : string) => {
         if(confirm('정말 삭제하시겠습니까?')) {
-            await deleteTodo(id);
+            await deleteTodo(todoId);
         }
     }
     
@@ -128,15 +128,15 @@ export default function TodoListPaging() {
                         </tr>
                     ) : (
                         todos.map((todo, index) => (
-                            <tr key={todo.id} style={{ height: '20px' }} className="align-middle">
+                            <tr key={todo.todoId} style={{ height: '20px' }} className="align-middle">
                                 <td>{(currentPage - 1) * pageSize + index + 1}</td>
                                 <td>{todo.priority}</td>
                                 <td>{todo.title}</td>
                                 <td>{todo.status}</td>          
                                 <td>{todo.deadline}</td>
                                 <td>
-                                    <button className="btn btn-sm btn-outline-warning me-2" onClick={() => handleEdit(todo.id)}><FontAwesomeIcon icon={faPenToSquare} /> Edit</button>
-                                    <button className="btn btn-sm btn-outline-danger" onClick={() => deleteHandle(todo.id)}><FontAwesomeIcon icon={faTrash} />Delete</button>
+                                    <button className="btn btn-sm btn-outline-warning me-2" onClick={() => handleEdit(todo.todoId)}><FontAwesomeIcon icon={faPenToSquare} /> Edit</button>
+                                    <button className="btn btn-sm btn-outline-danger" onClick={() => deleteHandle(todo.todoId)}><FontAwesomeIcon icon={faTrash} />Delete</button>
                                 </td>
                             </tr>
                         ))
