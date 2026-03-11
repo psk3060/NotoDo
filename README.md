@@ -105,6 +105,19 @@
   "payload": { "before" : {...}, "after": {...} },
   "created_at": "2026-03-09T11:00:00Z"
 }
+
+// 삭제 예시
+{
+  "todo_id": 1,
+  "notion_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "event_type": "delete",
+  "processed": false,
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "payload": { "before" : {...}, "after": None },
+  "created_at": "2026-03-09T12:00:00Z"
+}
+
 ```
 
 ## 🛠 Roadmap
