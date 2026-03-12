@@ -60,7 +60,7 @@
 - PostgreSQL(SQLAlchemy) :
     - 사용자
     - 사용자 보안 정책(토큰 정책)
-    - (Planned) TODO Primary 저장소
+    - TODO Primary 저장소
 - Redis
     - IP(접근 권한)
     - Refresh Token(Refresh Token Active)
@@ -69,7 +69,7 @@
     - Refresh Token 발급 이력
     - 로그인 시도 이력(성공 / 실패)
     - 기능 접근 이력(성공 / 실패)
-    - (Planned) Outbox 이벤트 로그 (Notion 동기화 이력, Audit Trail)
+    - Outbox 이벤트 로그 (Notion 동기화 이력, Audit Trail)
 ***
 
 ## 🗂 Outbox 이벤트 로그 구조 (MongoDB)
