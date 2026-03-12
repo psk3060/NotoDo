@@ -18,8 +18,6 @@ NOTION_API_KEY = os.getenv("NOTION_API_KEY")
 NOTION_VERSION = os.getenv("NOTION_VERSION")
 NOTION_DATABASE_ID = os.getenv("NOTION_DATABASE_ID")
 
-
-
 def get_notion_headers() -> dict:
     return {
         "Authorization": f"Bearer {NOTION_API_KEY}",
@@ -29,8 +27,32 @@ def get_notion_headers() -> dict:
 
 def get_notion_service() :
     return NotionApiServiceImpl()
+    
+    
 
 class NotionService(ABC):
+    
+    def __init__(self):
+        self.headers = get_notion_headers()
+        self.client = httpx.AsyncClient(headers=self.headers)
+    
+    async def get(self, url: str):
+        res = await self.client.get(url, headers=self.headers)
+        res.raise_for_status()
+        return res.json()
+    
+    async def post(self, url: str, json: dict):
+        res = await self.client.post(url, headers=self.headers, json=json)
+        res.raise_for_status()
+        return res.json()
+
+    async def patch(self, url : str, json:dict):
+        res = await self.client.patch(url, headers=self.headers, json=json)
+        res.raise_for_status()
+        return res.json()
+    
+    async def close(self):
+        await self.client.aclose()
     
     @abstractmethod
     def retrieve_database() -> NotionState:
@@ -49,7 +71,7 @@ class NotionService(ABC):
         pass
     
     @abstractmethod
-    def patch_page(todo_id : str, todo : Todo | None = None, is_trash : bool | None = False) -> dict :
+    def patch_page(todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
         pass
     
     @abstractmethod
@@ -236,7 +258,7 @@ class NotionApiServiceImpl(NotionService):
             "id" : create_id
         }
         
-    async def patch_page(self, todo_id : str, todo : Todo | None = None, is_trash : bool | None = False) -> dict :
+    async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
         
         url = f"https://api.notion.com/v1/pages/{todo_id}"
         
@@ -302,7 +324,7 @@ class NotionApiServiceImpl(NotionService):
         except HTTPStatusError as e:
             print(e)
             return []
-        
+    
     async def create_reply(self, comment : TodoComment) -> dict :
         
         url = "https://api.notion.com/v1/comments"
@@ -336,3 +358,39 @@ class NotionApiServiceImpl(NotionService):
             "isSuccess" : True,
             "id" : create_id
         }
+        
+
+class NotionTaskServiceImpl(NotionService):
+    
+    async def retrieve_database(self) -> NotionState:
+        pass
+
+    async def query_datasource(self, data_source_id : str, filter: dict | None = None) :
+        pass
+    
+    async def retrieve_page(self, page_id : str) : 
+        pass
+    
+    async def create_page(self, todo : Todo):
+        pass
+        
+    async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
+        
+        url = f"https://api.notion.com/v1/pages/{todo_id}"
+        
+        try :
+            await self.patch(url, json = todo)
+        except HTTPStatusError as e:
+            raise e
+        
+        # TODO
+        return {
+            "isSuccess" : True,
+            "message" : ""
+        }
+    
+    def retrieve_reply_list(self, page_id : str):
+        pass
+    
+    async def create_reply(self, comment : TodoComment) -> dict :
+        pass
