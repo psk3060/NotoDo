@@ -1,6 +1,7 @@
 import math
 import uuid, json
 
+from tasks.celery_app import celery
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 
@@ -345,11 +346,12 @@ class HybridTodoServiceImpl(TodoService) :
             )
             
             await self.todo_repository.commit()
-        except:
+        except Exception as e:
+            print(e)
             await self.todo_repository.rollback()
             
             # 노션에서 삭제
-            self.notion_service.patch_page(todo.todoId, todo, True)
+            await self.notion_service.patch_page(todo.todoId, todo, True)
             
             # TODO 실패 시 outbox 처리
             
@@ -381,7 +383,7 @@ class HybridTodoServiceImpl(TodoService) :
             updated_entity = await self.todo_repository.update(todo_id, todo_update)
             
             # outbox 등록
-            await self.outbox_repository.insert(
+            outbox = await self.outbox_repository.insert(
                 dto = TodoOutboxDTO(
                     db_id = updated_entity.id,
                     todo_id = updated_entity.todoId, 
@@ -398,11 +400,11 @@ class HybridTodoServiceImpl(TodoService) :
             
             await self.todo_repository.commit()
             
+            celery.send_task("tasks.tasks.sync_to_notion", args=[str(outbox.id)])
+            
         except Exception as e:
             print(e)
             await self.todo_repository.rollback()
-            
-            # TODO 실패 시 outbox 처리
             
             
     
@@ -425,7 +427,7 @@ class HybridTodoServiceImpl(TodoService) :
             
             deleted_entity = await self.todo_repository.delete(todo_id, user_id)
             
-            await self.outbox_repository.insert(
+            outbox = await self.outbox_repository.insert(
                 dto = TodoOutboxDTO(
                     db_id = deleted_entity.id,
                     todo_id = deleted_entity.todoId, 
@@ -433,7 +435,7 @@ class HybridTodoServiceImpl(TodoService) :
                     user_id = deleted_entity.userId, 
                     token_jti = access_token_payload["jti"], 
                     payload = {
-                        "before": self.todo_repository.to_dict(deleted_entity),
+                        "before": self.todo_repository.to_dict(deleted_entity, True),
                         "after":  None
                     }
                 ), 
@@ -442,15 +444,12 @@ class HybridTodoServiceImpl(TodoService) :
             
             await self.todo_repository.commit()
             
+            celery.send_task("tasks.tasks.sync_to_notion", args=[str(outbox.id)])
+            
         except Exception as e:
             print(e)
             await self.todo_repository.rollback()
             
-            # TODO 실패 시 outbox 처리
-            
-            
-            
-    
     
     async def create_comment(self, comment : TodoComment, access_token : str = None) :
         '''댓글 등록 : 예외 발생 시 DB Rollback만'''

@@ -90,7 +90,7 @@
   "processed": true,
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-  "payload": { "title": "운동하기", ... },
+  "payload": { "before" : None, "after": {...} },
   "created_at": "2026-03-09T10:00:00Z"
 }
 
@@ -102,9 +102,22 @@
   "processed": false,
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
-  "payload": { "title": "공부하기", ... },
+  "payload": { "before" : {...}, "after": {...} },
   "created_at": "2026-03-09T11:00:00Z"
 }
+
+// 삭제 예시
+{
+  "todo_id": 1,
+  "notion_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "event_type": "delete",
+  "processed": false,
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "payload": { "before" : {...}, "after": None },
+  "created_at": "2026-03-09T12:00:00Z"
+}
+
 ```
 
 ## 🛠 Roadmap
@@ -123,8 +136,6 @@
 - Notion 연동 : 작업 목록 연동 CRUD(Internal Integration Authorization)
 - Notion 연동 : 댓글 기능(읽기, 쓰기)
 - Notion 연동 : 필터링(상태별, 우선순위별, 제목 + 내용 검색) 추가, List 페이징
-
-### 🔄 In Progress (Architecture Upgrade)
 - **Notion Primary → Secondary 전환** (PostgreSQL 중심 구조로 재설계)
   - 등록: Notion 선행 저장 → notion_id 발급 → PostgreSQL INSERT → Outbox 기록 (processed=True)
   - 수정/삭제: PostgreSQL 선행 반영 → Outbox 기록 (processed=False) → Celery Worker 비동기 동기화
@@ -135,8 +146,9 @@
 - **Celery 도입** (Outbox Poller + Notion 동기화 Worker)
   - 브로커: Redis (1단계) → RabbitMQ 교체 예정 (AMQP 학습 목적)
   - Retry: Exponential Backoff, 최대 5회
-- 서버 연동 : 자주 사용하는 필터링 조건 저장
 
+### 🔄 In Progress (Architecture Upgrade)
+- 서버 연동 : 자주 사용하는 필터링 조건 저장
 
 ### 🔮 고도화
 - Notion 연동 : 댓글 작성 시 파일 업로드

@@ -180,21 +180,58 @@ class TodoRepository:
         return comment_entity
         
 
-    def to_dict(self, entity: TodoBase) -> dict:
-        return {
-            "title":       entity.title,
-            "priority":    to_notion_priority_id(entity.priority),
-            "status":      to_notion_status_id(entity.status),
-            "description": entity.description,
-            "deadline":    entity.deadline,
+    def to_dict(self, entity: TodoBase, is_trash : bool | None = False) -> dict:
+        
+        properties = {
+            "상태": {"status": {"id": to_notion_status_id(entity.status)}},
+            "작업명": {"title": [{"text": {"content": entity.title}}]},
+            "우선순위": { "select": { "id": to_notion_priority_id(entity.priority) } },
         }
+        
+        if entity.description:
+            properties["설명"] = {
+                "rich_text": [{"text": {"content": entity.description}}]
+            }
+        # 내용 없을 경우 공백
+        else :
+            properties["설명"] = {"rich_text": []}
+            
+            
+        if entity.deadline:
+            properties["마감일"] = {
+                "date": {"start": entity.deadline}
+            }
+        else :
+            properties["마감일"] = { "date": {} }
+        
+        payload = {
+            "properties": properties,
+            "in_trash" : is_trash
+        }
+        
+        
+        return payload
+        
     
     def to_comment_dict(self, entity : TodoCommentBase) -> dict:
-        return {
-            "author" : entity.author,
-            "commentText" : entity.commentText
+        '''등록만 있음'''
+        payload = {
+            "rich_text": [{"text": {"content": entity.commentText}}],
+            "parent": {
+                "page_id": entity.todoId,
+                "type": "page_id"
+            },
+            # TODO 첨부파일
+            "attachments": [],
+            "display_name": {
+                "type": "custom",
+                "custom": { "name": entity.author }
+            }
         }
-    
+        
+        return payload
+        
+        
         
         
     async def commit(self) -> None:

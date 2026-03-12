@@ -4,8 +4,10 @@ from model.todo.todo_outbox_model import TodoCommentOutboxDTO, TodoOutbox, TodoO
 
 class TodoOutboxRepository : 
     async def insert(dto : TodoOutboxDTO, processed: bool) :
-        await TodoOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now()).insert()
+        outbox = TodoOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now())
+        await outbox.insert()
+        return outbox
         
-    
     async def insertComment(dto : TodoCommentOutboxDTO, processed : bool):
         await TodoCommentOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now()).insert()
+        
