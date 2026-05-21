@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from model.todo.todo_outbox_model import TodoCommentOutboxDTO, TodoOutbox, TodoOutboxDTO, TodoCommentOutbox
 
@@ -9,5 +9,7 @@ class TodoOutboxRepository :
         return outbox
         
     async def insertComment(dto : TodoCommentOutboxDTO, processed : bool):
-        await TodoCommentOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now()).insert()
+        outbox = TodoCommentOutbox(**dto.model_dump(), processed=processed, created_at = datetime.now())
+        await outbox.insert()
+        return outbox
         

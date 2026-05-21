@@ -60,11 +60,11 @@
 - PostgreSQL(SQLAlchemy) :
     - 사용자
     - 사용자 보안 정책(토큰 정책)
-    - TODO Primary 저장소
+    - Primary 저장소
 - Redis
     - IP(접근 권한)
     - Refresh Token(Refresh Token Active)
-    - (Planned) Celery 메시지 브로커 1단계 (→ 이후 RabbitMQ로 교체 예정)
+    - Celery 메시지 브로커 1단계 (→ 이후 RabbitMQ로 교체 예정)
 - MongoDB(Beanie)
     - Refresh Token 발급 이력
     - 로그인 시도 이력(성공 / 실패)
@@ -91,7 +91,8 @@
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
   "payload": { "before" : None, "after": {...} },
-  "created_at": "2026-03-09T10:00:00Z"
+  "created_at": "2026-03-09T10:00:00Z",
+  "updated_at" : "2026-03-09T10:00:00Z",
 }
 
 // 수정 예시
@@ -103,7 +104,8 @@
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
   "payload": { "before" : {...}, "after": {...} },
-  "created_at": "2026-03-09T11:00:00Z"
+  "created_at": "2026-03-09T11:00:00Z",
+  "updated_at" : "2026-03-09T10:00:00Z",
 }
 
 // 삭제 예시
@@ -115,6 +117,27 @@
   "user_id": "demo",
   "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
   "payload": { "before" : {...}, "after": None },
+  "created_at": "2026-03-09T12:00:00Z",
+  "updated_at" : "2026-03-09T10:00:00Z"
+}
+
+// 조회 예시(List)
+{
+  "payload" : { "title" : "", "status" : "", "priority" : ""},
+  "event_type" : "query",
+  "processed": true,
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+  "created_at": "2026-03-09T12:00:00Z"
+}
+
+// 조회 예시(Detail)
+{
+  "payload" : { "notion_id" : "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"},
+  "event_type" : "detail",
+  "processed": true,
+  "user_id": "demo",
+  "token_jti": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
   "created_at": "2026-03-09T12:00:00Z"
 }
 
@@ -145,12 +168,10 @@
   - processed=False 건은 Celery Beat가 주기적으로 재시도
 - **Celery 도입** (Outbox Poller + Notion 동기화 Worker)
   - 브로커: Redis (1단계) → RabbitMQ 교체 예정 (AMQP 학습 목적)
-  - Retry: Exponential Backoff, 최대 5회
-
-### 🔄 In Progress (Architecture Upgrade)
-- 서버 연동 : 자주 사용하는 필터링 조건 저장
+  - Retry: Exponential Backoff, 최대 5회(매 사이클마다 * 2)
 
 ### 🔮 고도화
+- 서버 연동 : 자주 사용하는 필터링 조건 저장
 - Notion 연동 : 댓글 작성 시 파일 업로드
 - Notion 연동 : 통계 대시보드
 - Notion 연동 : 오프라인 모드

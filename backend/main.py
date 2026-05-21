@@ -7,7 +7,11 @@ from routes.auth import router as auth_router
 from config.context_manager import lifespan
 from middleware import JWTMiddleware
 
+import logging
+
 app = FastAPI(lifespan=lifespan)
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 origins = [
     "http://localhost",

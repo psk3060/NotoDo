@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faPenToSquare, faTrash, faSearch} from '@fortawesome/free-solid-svg-icons'
+import { faSave, faPlus, faPenToSquare, faTrash, faSearch} from '@fortawesome/free-solid-svg-icons'
 
 import {useTodoListWithHook} from '@/features/todo/hooks/useTodo';
 import { useState } from 'react';
@@ -20,6 +20,11 @@ export default function TodoListPaging() {
 
     const handleEdit = async (todoId : string) => {
         navigate(`/todos/${todoId}`);
+    }
+
+    // TODO : 검색 조건(RDBMS) 저장 로직
+    const handleSaveCondition = () =>{
+        console.log('조건 저장 버튼 클릭');
     }
 
     const deleteHandle = async (todoId : string) => {
@@ -98,11 +103,20 @@ export default function TodoListPaging() {
                     <FontAwesomeIcon icon={faSearch} /> 검색
                     </button>
                 </div>
+
+                <div className="col-auto">
+                    <button className="btn btn-outline-dark" onClick={handleSaveCondition}>
+                    <FontAwesomeIcon icon={faSave} /> 조건 저장
+                    </button>
+                </div>
+
                 <div className="col-auto">
                     <button className="btn btn-outline-secondary" onClick={resetSearch}>
                     초기화
                     </button>
                 </div>
+
+                
 
             </div>
             {/* 검색 영역 */}

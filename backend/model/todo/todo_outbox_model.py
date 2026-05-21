@@ -25,6 +25,7 @@ class TodoCommentOutbox(Document):
     user_id:    Optional[str]      = None
     token_jti:  Optional[str]      = None
     payload:    Optional[dict[str, Any]] = None
+    try_cnt : Optional[int] = None
     created_at: Optional[datetime] = None
     
     class Settings:

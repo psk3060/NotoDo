@@ -180,7 +180,7 @@ class TodoRepository:
         return comment_entity
         
 
-    def to_dict(self, entity: TodoBase, is_trash : bool | None = False) -> dict:
+    def to_dict(self, entity: TodoBase) -> dict:
         
         properties = {
             "상태": {"status": {"id": to_notion_status_id(entity.status)}},
@@ -201,17 +201,14 @@ class TodoRepository:
             properties["마감일"] = {
                 "date": {"start": entity.deadline}
             }
-        else :
-            properties["마감일"] = { "date": {} }
+        
         
         payload = {
-            "properties": properties,
-            "in_trash" : is_trash
+            "properties": properties
         }
         
-        
         return payload
-        
+    
     
     def to_comment_dict(self, entity : TodoCommentBase) -> dict:
         '''등록만 있음'''
@@ -230,7 +227,9 @@ class TodoRepository:
         }
         
         return payload
-        
+    
+    
+    
         
         
         

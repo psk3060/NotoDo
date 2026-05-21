@@ -289,6 +289,36 @@ class HybridTodoServiceImpl(TodoService) :
             total = temp_result.total
             totalPages =temp_result.totalPages
             
+            # Outbox에 쿼리 이벤트 등록(자주 사용하는 조건 조회하기 위함)
+            if listRequest.status != '' or listRequest.priority != '' or listRequest.title != '' :
+                
+                conditions = {}
+                
+                if listRequest.status:
+                    conditions["status"] = listRequest.status
+                    
+                if listRequest.priority:
+                    conditions["priority"] = listRequest.priority
+                
+                if listRequest.title:
+                    conditions["title"] = listRequest.title
+                
+                await self.outbox_repository.insert(
+                    dto = TodoOutboxDTO(
+                        db_id = None,
+                        todo_id = None, 
+                        event_type = 'query', 
+                        user_id = listRequest.userId, 
+                        token_jti = None, 
+                        payload = {
+                            "condition": conditions
+                        }
+                    ), 
+                    processed = True
+                )
+
+                await self.todo_repository.commit()
+            
         except Exception as e:
             print(e)
             
@@ -435,7 +465,7 @@ class HybridTodoServiceImpl(TodoService) :
                     user_id = deleted_entity.userId, 
                     token_jti = access_token_payload["jti"], 
                     payload = {
-                        "before": self.todo_repository.to_dict(deleted_entity, True),
+                        "before": self.todo_repository.to_dict(deleted_entity),
                         "after":  None
                     }
                 ), 

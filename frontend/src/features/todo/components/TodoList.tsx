@@ -38,7 +38,7 @@ export default function TodoList() {
     return(
         <div className="container todo-list w-75">
             <h2 className="text-center my-4">My Todo List</h2>
-
+            
             <table className="table table-striped">
                 <thead>
                     <tr>

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
 from model.auth.refresh_token_log import RefreshTokenLogDTO
-from repository.token_repository import RefreshTokenLogRepository
+from repository.auth_repository import RefreshTokenLogRepository
 from config.redis_setup import redis_container
 
 from utils.hash_utils import hash_token
@@ -92,7 +92,7 @@ class JwtTokenServiceImpl(TokenService):
             
         
         if token_type == "access":
-            expire = datetime.now(timezone.utc) + timedelta(minutes=15) # minutes=15
+            expire = datetime.now(timezone.utc) + timedelta(minutes=15)
         elif token_type == "refresh":
             expire = datetime.now(timezone.utc) + timedelta(days=7)
         else :

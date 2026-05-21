@@ -12,6 +12,10 @@ from model import NotionState, notion_state
 
 from httpx import HTTPStatusError
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 NOTION_API_KEY = os.getenv("NOTION_API_KEY")
@@ -46,8 +50,8 @@ class NotionService(ABC):
         res.raise_for_status()
         return res.json()
 
-    async def patch(self, url : str, json:dict):
-        res = await self.client.patch(url, headers=self.headers, json=json)
+    async def patch(self, todo_id : str, json:dict):
+        res = await self.client.patch(f"https://api.notion.com/v1/pages/{todo_id}", headers=self.headers, json=json)
         res.raise_for_status()
         return res.json()
     
@@ -260,8 +264,6 @@ class NotionApiServiceImpl(NotionService):
         
     async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
         
-        url = f"https://api.notion.com/v1/pages/{todo_id}"
-        
         properties = {}
         
         if todo:
@@ -294,8 +296,9 @@ class NotionApiServiceImpl(NotionService):
             "in_trash" : is_trash
         }
         
+        
         try :
-            await self.patch(url, json = payload)
+            await self.patch(todo_id, json = payload)
         except HTTPStatusError as e:
             raise e
         
@@ -362,24 +365,32 @@ class NotionApiServiceImpl(NotionService):
 
 class NotionTaskServiceImpl(NotionService):
     
-    async def retrieve_database(self) -> NotionState:
-        pass
-
-    async def query_datasource(self, data_source_id : str, filter: dict | None = None) :
+    def __init__(self):
+        self.headers = get_notion_headers()
+        self.client = httpx.AsyncClient(headers=self.headers)
+    
+    def retrieve_database() -> NotionState:
         pass
     
-    async def retrieve_page(self, page_id : str) : 
+    def query_datasource(data_source_id : str, filter: dict | None = None) -> dict :
         pass
     
-    async def create_page(self, todo : Todo):
+    def retrieve_page(page_id : str) -> dict : 
         pass
-        
-    async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
-        
-        url = f"https://api.notion.com/v1/pages/{todo_id}"
+    
+    def create_page(todo : Todo) -> dict :
+        pass
+    
+    def retrieve_reply_list( page_id : str) -> list:
+        pass
+    
+    def create_reply(comment : TodoComment) -> dict :
+        pass
+    
+    async def patch_page(self, todo_id : str, body : dict | None = None) -> dict :
         
         try :
-            await self.patch(url, json = todo)
+            await self.patch(todo_id, json = body)
         except HTTPStatusError as e:
             raise e
         
@@ -389,8 +400,3 @@ class NotionTaskServiceImpl(NotionService):
             "message" : ""
         }
     
-    def retrieve_reply_list(self, page_id : str):
-        pass
-    
-    async def create_reply(self, comment : TodoComment) -> dict :
-        pass
