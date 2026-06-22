@@ -1,7 +1,7 @@
 import math
 import uuid, json
 
-from tasks.celery_app import celery
+from tasks.config.celery_config import sync_celery, condition_celery
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 
@@ -289,10 +289,10 @@ class HybridTodoServiceImpl(TodoService) :
             total = temp_result.total
             totalPages =temp_result.totalPages
             
-            # Outbox에 쿼리 이벤트 등록(자주 사용하는 조건 조회하기 위함)
+            # 조회 조건
+            conditions = {}
+            
             if listRequest.status != '' or listRequest.priority != '' or listRequest.title != '' :
-                
-                conditions = {}
                 
                 if listRequest.status:
                     conditions["status"] = listRequest.status
@@ -303,25 +303,30 @@ class HybridTodoServiceImpl(TodoService) :
                 if listRequest.title:
                     conditions["title"] = listRequest.title
                 
-                await self.outbox_repository.insert(
-                    dto = TodoOutboxDTO(
-                        db_id = None,
-                        todo_id = None, 
-                        event_type = 'query', 
-                        user_id = listRequest.userId, 
-                        token_jti = None, 
-                        payload = {
-                            "condition": conditions
-                        }
-                    ), 
-                    processed = True
+            
+            # 비어있지 않을 경우, Outbox에 등록(Audit 로그 보관용)
+            if conditions:
+                # Outbox 등록
+                outbox = await self.outbox_repository.insert(
+                        dto = TodoOutboxDTO(
+                            db_id = None,
+                            todo_id = None, 
+                            event_type = 'query', 
+                            user_id = listRequest.userId, 
+                            token_jti = None, 
+                            payload = {
+                                "condition": conditions
+                            }
+                        ), 
+                        processed = False
                 )
 
-                await self.todo_repository.commit()
-            
+                # 자주 사용하는 조건 테이블에 추가(5건만 출력 예정이지만, 조회 시 자체적으로 조회 예정)
+                condition_celery.send_task("tasks.condition.condition_tasks.task_save_condition_db", args=[str(outbox.id)], queue="condition")
+
         except Exception as e:
             print(e)
-            
+
         
         return TodoListResponse(
                 data=converted_data,
@@ -430,7 +435,8 @@ class HybridTodoServiceImpl(TodoService) :
             
             await self.todo_repository.commit()
             
-            celery.send_task("tasks.tasks.sync_to_notion", args=[str(outbox.id)])
+            # Task 수동 호출
+            sync_celery.send_task("tasks.sync.notion_tasks.sync_to_notion", args=[str(outbox.id)], queue="sync")
             
         except Exception as e:
             print(e)
@@ -474,7 +480,7 @@ class HybridTodoServiceImpl(TodoService) :
             
             await self.todo_repository.commit()
             
-            celery.send_task("tasks.tasks.sync_to_notion", args=[str(outbox.id)])
+            sync_celery.send_task("tasks.sync.notion_tasks.sync_to_notion", args=[str(outbox.id)], queue="sync")
             
         except Exception as e:
             print(e)
@@ -527,7 +533,6 @@ class HybridTodoServiceImpl(TodoService) :
                 ), 
                 processed = True
             )
-            
             
             await self.todo_repository.commit()
         except Exception as e:

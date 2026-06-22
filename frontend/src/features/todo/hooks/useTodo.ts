@@ -310,3 +310,29 @@ export function useTodoDetailHook(todoId : string) {
     
 
 }
+
+// 자주 사용하는 조건
+export function useFrequentlyUsedConditionsHook() {
+    
+    const {executeWithAuth} = useApiWithAuth();
+    
+    const {data, isLoading : isFetching} = useQuery({
+        queryKey : ['conditionList'],
+        queryFn: () => executeWithAuth(() => todoService.getFrequentlyUsedConditions()),
+        throwOnError: () => {
+            toast.error(TOAST_MESSAGES.TODO.CONDITION_FETCH_FAIL);
+            return false;
+        },
+        placeholderData : (prev) => prev,
+        refetchOnWindowFocus: false,
+    });
+
+    const conditionList = data?.data ?? [];
+
+    const isLoading = isFetching;
+
+    return {
+        conditionList,
+        isLoading
+    }
+}

@@ -5,7 +5,7 @@ import { ENV } from "@/config/env";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { apiClient } from "@/config/apiClient";
 import {generateId} from "@/shared/utils/string";
-import type {PagedResponse, SearchParam} from '@/shared/types'
+import type {FrequentlyCondition, FrequentlyConditionResponse, PagedResponse, SearchParam} from '@/shared/types'
 
 export async function getAllTodos() : Promise<Todo[]> {
     if(ENV.IS_DEV) {
@@ -78,6 +78,21 @@ export async function createTodoComment(comment : TodoComment) : Promise<void> {
     }
 
     await apiClient.post(API_ENDPOINTS.TODOS.COMMENT(comment.todoId), comment);
+}
+
+
+export async function getFrequentlyUsedConditions() : Promise<FrequentlyConditionResponse<FrequentlyCondition>> {
+
+    // TODO DEV 연동 
+    /*
+    if (ENV.IS_DEV) {
+        return null;
+    }
+    */
+    const response = await apiClient.get<FrequentlyConditionResponse<FrequentlyCondition>>(API_ENDPOINTS.TODOS.FREQUENTLY_USED_CONDITIONS);
+
+    return response.data;
+
 }
 
 
@@ -157,3 +172,5 @@ function mockUpdateTodo(todoId : string, payload : UpdateTodoPayload) : void {
 function mockDeleteTodo(todoId : string) : void {
     todoStore.getState().deleteById(todoId);
 }
+
+

@@ -16,17 +16,17 @@ from core.security import rsa_manager
 import redis.asyncio as redis
 
 from config.redis_setup import redis_container
-from config.postgre_setup import engine, Base
+from config.postgre_setup import engine, DeclarativeBase
 
 from service.notion_service import NotionApiServiceImpl
-
+from model.todo.search_condition import SearchConditionUsage
 
 
 # .env 파일 로드
 load_dotenv()
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI):
     # MongoDB Client 생성
     
     client = AsyncMongoClient(
@@ -51,7 +51,7 @@ async def lifespan(app: FastAPI):
     
     # Postgre 테이블 생성
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(DeclarativeBase.metadata.create_all)
     
     # Postgre 테이블 생성
     

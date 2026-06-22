@@ -9,7 +9,7 @@ from model.auth.refresh_token_log import RefreshTokenLogDTO
 from repository.auth_repository import RefreshTokenLogRepository
 from config.redis_setup import redis_container
 
-from utils.hash_utils import hash_token
+from utils.string_utils import replace_hash_string
 
 load_dotenv()
 
@@ -178,7 +178,7 @@ class JwtTokenServiceImpl(TokenService):
         payload_user_id = refresh_payload['user_id']
         
         # 해시 생성
-        refresh_token_hash = hash_token(refresh_token)
+        refresh_token_hash = replace_hash_string(refresh_token)
         key = f"refresh:{payload_user_id}:{refresh_payload['jti']}"
         
         # Redis에 저장(TTL = 7일)
@@ -193,7 +193,7 @@ class JwtTokenServiceImpl(TokenService):
                     user_id = user_id
                     , refresh_token_hash = refresh_token_hash
                     , refresh_token_jti = refresh_payload['jti']
-                    , access_token_hash = hash_token(access_token)
+                    , access_token_hash = replace_hash_string(access_token)
                     , access_token_jti = access_payload['jti']
                     , issued_at = datetime.fromtimestamp(refresh_payload["iat"]).isoformat()
                     , expires_at=datetime.fromtimestamp(refresh_payload["exp"]).isoformat()
@@ -239,7 +239,7 @@ class JwtTokenServiceImpl(TokenService):
             if not TOKEN_ALGORITHM:
                 raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
             
-            refresh_token_hash = hash_token(refresh_token)
+            refresh_token_hash = replace_hash_string(refresh_token)
             
             payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
 
@@ -276,7 +276,7 @@ class JwtTokenServiceImpl(TokenService):
             if not TOKEN_ALGORITHM:
                 raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
             
-            refresh_token_hash : str = hash_token(refresh_token)
+            refresh_token_hash : str = replace_hash_string(refresh_token)
             
             payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
 

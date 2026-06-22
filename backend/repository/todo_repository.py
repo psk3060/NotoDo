@@ -230,9 +230,7 @@ class TodoRepository:
     
     
     
-        
-        
-        
+    
     async def commit(self) -> None:
         await self.session.commit()
 

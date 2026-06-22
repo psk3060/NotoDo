@@ -8,7 +8,8 @@ export const API_ENDPOINTS = {
     TODOS : {
         BASE : '/todos',
         COMMENT : (id : string) => `/todos/${id}/comments`,
-        BY_ID : (id : string) => `/todos/${id}`
+        BY_ID : (id : string) => `/todos/${id}`,
+        FREQUENTLY_USED_CONDITIONS : '/todos/frequently-used-conditions'
     }
 } as const;
 
@@ -85,6 +86,7 @@ export const TOAST_MESSAGES = {
         CREATE_FAIL : 'Todo 생성에 실패했습니다.',
         CREATE_COMMENT_FAIL : 'Todo 답글 생성에 실패했습니다.',
         UPDATE_FAIL : 'Todo 수정에 실패했습니다.',
+        CONDITION_FETCH_FAIL : '자주 사용하는 조건을 불러오는데 실패했습니다.',
     }
 } as const;
 
