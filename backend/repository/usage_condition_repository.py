@@ -30,20 +30,20 @@ class UsageConditionRepository:
         
         self.session.add(entity)
         
-        self.session.flush()
+        await self.session.flush()
         
         await self.session.refresh(entity)
         
         return entity
     
     async def increate_count(self, hash_data):
-        entity = self.select_object_by_id(hash_data)
+        entity = await self.select_object_by_id(hash_data)
         
         search_count = entity.search_count
         
         entity.search_count = search_count + 1
         
-        self.session.flush()
+        await self.session.flush()
         
         await self.session.refresh(entity)
         

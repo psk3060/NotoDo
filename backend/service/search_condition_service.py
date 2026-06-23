@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 
 from typing import Any
 
-from config.postgre_setup import get_db
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from repository.usage_condition_repository import UsageConditionRepository
@@ -32,22 +31,24 @@ class SearchConditionService(ABC):
     
 # 자주 사용한 검색 조건 - 조회 버튼을 통해 등록되는 조회 조건    
 class UsageSearchConditionServiceImpl(SearchConditionService):
+    
+    def __init__(self, session : AsyncSession):
+        self.session = session
+    
     async def save_condition(self, userId : str, payload : dict[str, Any]):
-        session : AsyncSession = Depends(get_db)
-        
-        repository = UsageConditionRepository(session)
+        repository = UsageConditionRepository(self.session)
         
         # 문자열을 Hash로 변환
         hash_data = replace_hash_string(json_to_string(payload))
 
-        count = await repository.count(payload, hash_data)
+        count = await repository.count(hash_data)
         
         if count == 0:
             await repository.insert(userId, payload, hash_data)
         else:
             await repository.increate_count(hash_data)
         
-        session.commit()
+        await self.session.commit()
         
     
     def delete_condition():
