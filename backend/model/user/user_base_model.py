@@ -2,9 +2,9 @@ from datetime import datetime
 
 from sqlalchemy import String, DateTime, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from config.postgre_setup import DeclarativeBase
+from db.postgres.base import Base
 
-class UserInfo(DeclarativeBase):
+class UserInfo(Base):
     '''사용자 정보'''
     __tablename__ = "users"
 
@@ -32,7 +32,7 @@ class UserInfo(DeclarativeBase):
         cascade="all, delete-orphan"
     )
     
-class UserAdd(DeclarativeBase):
+class UserAdd(Base):
     '''사용자 부가 정보'''
     __tablename__ = "user_add"
     
@@ -51,7 +51,7 @@ class UserAdd(DeclarativeBase):
     )
 
 
-class UserAuthState(DeclarativeBase):
+class UserAuthState(Base):
     __tablename__ = "user_auth_state"
     
     userId : Mapped[str] = mapped_column("user_id", String(36), primary_key=True)

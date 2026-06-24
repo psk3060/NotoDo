@@ -1,13 +1,13 @@
 from datetime import datetime
 from typing import Optional
 
-from config.postgre_setup import DeclarativeBase
+from db.postgres.base import Base
 
 from sqlalchemy import String, DateTime, text, ForeignKey, Text
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 # DB INSERT용 - Hook 수동 구현
-class TodoBase(DeclarativeBase):
+class TodoBase(Base):
     __tablename__ = "todos"
     
     id : Mapped[int] = mapped_column('id', primary_key=True)
@@ -31,7 +31,7 @@ class TodoBase(DeclarativeBase):
     )
     
     
-class TodoCommentBase(DeclarativeBase):
+class TodoCommentBase(Base):
     __tablename__ = "todo_comments"
     
     id : Mapped[int] = mapped_column('id', primary_key=True)

@@ -1,59 +1,54 @@
 import asyncio
 import logging
+from datetime import datetime, timezone, timedelta
 
-from tasks.config.celery_init_db import _init_beanie
 from tasks.config.celery_config import condition_celery
 
-from config.postgre_setup import AsyncSessionLocal
+from db.mongo.celery_config import init_mongo_for_task, close_mongo_for_task
+from db.postgres.celery_config import get_pg_session_for_tasks
 
 from model.todo.todo_outbox_model import TodoOutbox
 
+from tasks.util.task_run_util import run_async
 from service.search_condition_service import UsageSearchConditionServiceImpl
 
-from utils.string_utils import replace_hash_string, json_to_string
-
 logger = logging.getLogger(__name__)
-
-def run_async(coro):
-    return asyncio.run(coro)
 
 # Task - Redis 저장소에 조건 추가되었을 경우, 수행될 Task
 @condition_celery.task(queue="condition")
 def task_save_condition_db(event_id : str):
+    utc_now = datetime.now(timezone.utc)
+    logger.info(f"[조건 저장] 실행 — {utc_now.astimezone(tz=timezone(timedelta(hours=9)))}")
     
-    try :
+    try :    
         run_async(save_condition_db(event_id))
     except Exception as exc:
-        logger.error("fail usage search condition save \n", exc)
-
+        logger.error(f"[조건 저장] 실패: {exc}", exc_info=True)
+    
 # Redis 저장소에 조건 추가 되었을 경우, DB에 저장
 async def save_condition_db(event_id : str):
     
-    client = await _init_beanie()
+    mongo_client = await init_mongo_for_task()
     
-    try:
+    try :
         # Event 조회(MongoDB)
         event = await TodoOutbox.get(event_id)
-        
+    
         userId = event.user_id
         eventPayload = event.payload
         
-        async with AsyncSessionLocal() as session:
+        if event.event_type == "query" and bool(eventPayload):
             
-            # Task의 경우, 세션을 별도로 생성하기를 권장
-            conditionService = UsageSearchConditionServiceImpl(session)
-            
-            # eventPayload가 비어있지 않다면, event의 event_type 체크
-            if eventPayload:
-                # 1) event의 event_type 체크
-                if event.event_type == "query":
-                    # 저장
-                    await conditionService.save_condition(userId, eventPayload['condition'])
-                    
-                    # 3) Outbox 처리 내역 확인(Redis 메시지 삭제 및 Outbox 처리 완료 확인)
-                    event.processed = True
-                    await event.save()
-            
-    finally:
-        await client.close()
+            async with get_pg_session_for_tasks() as pg_session:
+                conditionService = UsageSearchConditionServiceImpl(pg_session)
+
+                await conditionService.save_condition(userId, eventPayload['condition'])
+                
+                event.processed = True
+                await event.save()
+                
+    finally : 
+        await close_mongo_for_task(mongo_client)
+    
+    
     

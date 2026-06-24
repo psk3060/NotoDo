@@ -3,16 +3,20 @@
 from fastapi import APIRouter, Request, Response, Depends
 from fastapi.responses import JSONResponse
 
+from db.postgres.client_config import get_pg_session
+
+
+
 from service import TokenService
 from service.ip_service import RedisManageIpServiceImpl
 from service import get_token_service
-from repository.user_repository import UserRepository
 from service.auth_service import AuthService, TokenAuthServiceImpl
-from config.postgre_setup import get_db
+
+from repository.user_repository import UserRepository
 
 from model import LoginRequest, LoginResponse, PublicKeyResponse
 
-from core.security import rsa_manager
+from core.rsa_mamanger import rsa_manager
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +26,7 @@ router = APIRouter(
 )
 
 def get_auth_service(
-    session : AsyncSession = Depends(get_db)
+    session : AsyncSession = Depends(get_pg_session)
 ) -> AuthService:
     user_repo = UserRepository(session)
     token_service = get_token_service()

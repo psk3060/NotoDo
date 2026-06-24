@@ -1,7 +1,8 @@
 import os
 
 from repository import TodoRepository, TodoOutboxRepository
-from config.postgre_setup import get_db
+
+from db.postgres.client_config import get_pg_session
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
@@ -21,7 +22,7 @@ router = APIRouter(
 
 # 환경변수 읽기
 def get_todo_service(
-    session : AsyncSession = Depends(get_db)    
+    session : AsyncSession = Depends(get_pg_session)    
 ) -> TodoService:
     
     ENVIRONMENT = os.getenv("TODO_ENV", "local")

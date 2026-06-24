@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import Optional, Any
 
-from config.postgre_setup import DeclarativeBase
-
 from sqlalchemy import String, DateTime, text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-class SearchConditionUsage(DeclarativeBase):
+from db.postgres.base import Base
+
+class SearchConditionUsage(Base):
     __tablename__ = "search_condition_usage"
     
     id : Mapped[int] = mapped_column('id', primary_key=True)

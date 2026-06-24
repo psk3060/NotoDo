@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from model.auth.refresh_token_log import RefreshTokenLogDTO
 from repository.auth_repository import RefreshTokenLogRepository
-from config.redis_setup import redis_container
+from core.redis_container import redis_container
 
 from utils.string_utils import replace_hash_string
 

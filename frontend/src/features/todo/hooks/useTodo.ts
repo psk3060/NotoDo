@@ -74,8 +74,20 @@ export function useTodoListWithHook(pageSize : number) {
     useEffect(() => { setCurrentPage(1);}, [pageSize, appliedSearchParam]);
 
     // 조회 시 1 페이지로 초기화
-
+    /*
     const {data, isLoading : isFetching} = useQuery({
+        queryKey : ['todos', currentPage, pageSize, appliedSearchParam],
+        queryFn: () => executeWithAuth(() => todoService.getAllTodosWithPaging(currentPage, pageSize, appliedSearchParam)),
+        throwOnError: () => {
+            toast.error(TOAST_MESSAGES.TODO.FETCH_ALL_FAIL);
+            return false;
+        },
+        placeholderData : (prev) => prev,
+        refetchOnWindowFocus: false,
+    });
+    */
+
+    const {data, isLoading : isFetching, refetch} = useQuery({
         queryKey : ['todos', currentPage, pageSize, appliedSearchParam],
         queryFn: () => executeWithAuth(() => todoService.getAllTodosWithPaging(currentPage, pageSize, appliedSearchParam)),
         throwOnError: () => {
@@ -117,6 +129,8 @@ export function useTodoListWithHook(pageSize : number) {
         deleteTodo,
         searchParam,
         setSearchParam,
+        // 검색조건 동일할 경우, 검색 버튼 재작동 하고 싶을 경우(Tanstack 동작 원리 이해부터)
+        // applySearch: () => {refetch(); setAppliedSearchParam(searchParam)},
         applySearch: () => setAppliedSearchParam(searchParam),
         resetSearch: () => {
             setSearchParam({ title: '', status: '', priority: '' });
