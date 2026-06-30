@@ -8,8 +8,10 @@ export const API_ENDPOINTS = {
     TODOS : {
         BASE : '/todos',
         COMMENT : (id : string) => `/todos/${id}/comments`,
-        BY_ID : (id : string) => `/todos/${id}`,
-        FREQUENTLY_USED_CONDITIONS : '/todos/condition_list'
+        BY_ID : (id : string) => `/todos/${id}`
+    },
+    CONDITIONS : {
+        BASE : '/conditions'
     }
 } as const;
 

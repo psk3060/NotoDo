@@ -16,15 +16,30 @@ from beanie.operators import In
 logger = logging.getLogger(__name__)
 
 
-# 대상 탐색을 위한 Task 정의(Beat를 통해 매 15초마다 실행)
+
+@sync_celery.task(queue = "sync")
+def from_notion_to_notodo():
+    """Notion에서 Notodo에 최신 데이터 반영하기 위한 Task
+        구현 
+            1) 가장 마지막에 수행된 날짜 및 반영 건 보관
+            2) 1)에서의 날짜보다 Notion의 수정일자가 더 큰 경우에만 Notion에서 조회해오기
+            3) 주기는 30분에 한 번씩
+            4) Notion 데이터를 Notodo에 강제로 덮어쓰기
+    """
+    
+    pass
+
+
 @sync_celery.task(queue="sync")
 def process_outbox():
+    """Notodo → Notion 미처리 건 탐색을 하기 위한 Task(Beatㄹ르 통해 매 15초마다 실행)"""
     utc_now = datetime.now(timezone.utc)
     logger.info(f"[Outbox Poller] 실행 — {utc_now.astimezone(tz=timezone(timedelta(hours=9)))}")
     run_async(find_target())
 
 
 async def find_target():
+    """Notodo → Notion 미처리 건 탐색"""
     mongo_client = await init_mongo_for_task()
 
     try:

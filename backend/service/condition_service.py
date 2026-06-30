@@ -16,6 +16,10 @@ from utils import string_utils as string
 
 logger = logging.getLogger(__name__)
 
+
+
+
+
 # 자주 사용한 검색 조건, 저장 검색 조건을 위한 Service
 class SearchConditionService(ABC):
     
@@ -111,5 +115,3 @@ class SearchConditionClientServiceImpl(SearchConditionService):
     
     # TODO 한 건만 조회
     def selectOne(self): raise NotImplementedError
-
-

@@ -91,7 +91,7 @@ export async function getFrequentlyUsedConditions() : Promise<FrequentlyConditio
         }
     }
     
-    const response = await apiClient.get<FrequentlyConditionResponse<FrequentlyCondition>>(API_ENDPOINTS.TODOS.FREQUENTLY_USED_CONDITIONS);
+    const response = await apiClient.get<FrequentlyConditionResponse<FrequentlyCondition>>(API_ENDPOINTS.CONDITIONS.BASE);
     return response.data;
 
 }
