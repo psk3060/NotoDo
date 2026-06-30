@@ -18,7 +18,6 @@ from model import Todo, TodoComment, TodoListRequest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# .env 파일 로드
 router = APIRouter(
     prefix="/todos",
     tags=["todos"]
@@ -76,6 +75,13 @@ async def create_todo(_: Request):
     '''추가 버튼 클릭 시'''
     return None
 
+@router.get("/condition_list")
+async def select_usage_condition_list(request: Request, usage_condition_service : SearchConditionService = Depends(get_condition_service)):
+    '''Modal에서 호출
+    5개만 호출할 것이고, 파라미터도 회원ID만 있으므로 별도의 RequestDTO는 불필요
+    '''
+    return await usage_condition_service.selectList(request.state.user)
+
 @router.get("/{todo_id}")
 async def read_todo_detail(todo_id: str, request: Request, todo_service : TodoService = Depends(get_todo_service)):
     
@@ -107,9 +113,3 @@ async def create_todo_comment(todo_id : str, comment : TodoComment, request: Req
     await todo_service.create_comment(comment, request.cookies.get("access_token"))
     
 
-@router.get("/condition_list")
-async def select_usage_condition_list(request: Request, usage_condition_service : SearchConditionService = Depends(get_condition_service)):
-    '''Modal에서 호출
-    5개만 호출할 것이고, 파라미터도 회원ID만 있으므로 별도의 RequestDTO는 불필요
-    '''
-    return usage_condition_service.selectList(request.state.user)

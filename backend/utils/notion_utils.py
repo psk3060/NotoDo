@@ -77,22 +77,24 @@ NOTION_PRIORITY_VALUE_MAP = {
     TodoPriority.P5 : '매우 낮음'
 }
 
-# NOTION_PRIORITY_ID_REVERSE_MAP = {
-#     v: k for k, v in NOTION_PRIORITY_ID_MAP.items()
-# }
+
 # Notion option ID → Notodo priority 변환용 역방향 Map (e.g. 'fieq' → P1)
 NOTION_PRIORITY_ID_REVERSE_MAP = {p.value: p for p in TodoPriority}
 
 def to_notion_priority_id(priority: TodoPriority | str) -> str:
     """Notodo priority → Notion option ID (e.g. P1 → 'fieq')"""
-    # enum_priority = TodoPriority[priority]
-    # return NOTION_PRIORITY_ID_MAP[enum_priority]
     return TodoPriority[priority].value
 
-def to_notion_priority_label(priority: TodoPriority | str) -> str:
-    """Notodo priority → Notion 표시 레이블 (e.g. P1 → '긴급')"""
-    enum_priority = TodoPriority[priority]
-    return NOTION_PRIORITY_VALUE_MAP[enum_priority]
+def to_notion_priority_label(priority: TodoPriority | str | None) -> str:
+    """Notodo priority → Notion 표시 레이블 (e.g. P1 → '긴급')
+    """
+    response = ""
+    
+    if priority and priority.strip() != "":
+        response = NOTION_PRIORITY_VALUE_MAP[TodoPriority[priority]]
+
+    return response
+
 
 def from_notion_priority_id(option_id: str) -> str:
     """Notion option ID → Notodo priority 이름. option_id가 없으면 빈 문자열 반환 (e.g. 'fieq' → 'P1')"""
@@ -108,12 +110,6 @@ class TodoStatus(str, Enum):
     IN_PROGRESS = "WNMd"
     COMPLETED = "klrZ"
 
-# NOTION_STATUS_ID_MAP = {
-#     TodoStatus.PENDING: "NCSy",
-#     TodoStatus.IN_PROGRESS: "WNMd",
-#     TodoStatus.COMPLETED: "klrZ",
-# }
-
 NOTION_STATUS_VALUE_MAP = {
     TodoStatus.PENDING: "미시작",
     TodoStatus.IN_PROGRESS: "진행 중",
@@ -123,25 +119,20 @@ NOTION_STATUS_VALUE_MAP = {
 
 def to_notion_status_id(status: TodoStatus | str) -> str:
     """TodoStatus enum으로 Notion status ID를 반환. 예: PENDING → 'NCSy'"""
-    # return NOTION_STATUS_ID_MAP[TodoStatus[status]]
     return TodoStatus[status].value
 
 
-def to_notion_status_label(status: TodoStatus | str) -> str:
+def to_notion_status_label(status: TodoStatus | str | None) -> str:
     """TodoStatus enum으로 Notion에 표시되는 한글 레이블을 반환. 예: PENDING → '미시작'"""
-    return NOTION_STATUS_VALUE_MAP[TodoStatus[status]]
+    
+    response = ""
+    
+    if status and status.strip() != "":
+        response = NOTION_STATUS_VALUE_MAP[TodoStatus[status]]
 
+    return response
 
-# Notion에 보관된 값을 가지고, Notodo의 값을 가지고 오기 위한 Map
-# NOTION_STATUS_ID_REVERSE_MAP = {
-#     v: k for k, v in NOTION_STATUS_ID_MAP.items()
-# }
-
-# Notion option ID → Notodo status 변환용 역방향 Map (e.g. 'NCSy' → PENDING)
 NOTION_STATUS_ID_REVERSE_MAP = {s.value: s for s in TodoStatus}
-
-
-
 
 # 역매핑(Notion → Notodo )
 def from_notion_status_id(option_id: str) -> str:

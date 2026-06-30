@@ -12,7 +12,7 @@ class OutboxRegistServiceImpl():
         
     async def insert(self, dto : OutboxDTO, processed : bool, queueName : str | None ):
         # 1. 등록
-        outbox = self.repository.insert(dto, processed)
+        outbox = await self.repository.insert(dto, processed)
         
         # 2. celery 호출
         if queueName:

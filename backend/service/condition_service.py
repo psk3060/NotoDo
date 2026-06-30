@@ -1,10 +1,11 @@
+import logging
+
 from abc import ABC, abstractmethod
 
 from typing import Any
 
-from tasks.config.celery_config import condition_celery
-
 from model import OutboxDTO
+from model.dto.condition import convert_list
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from repository import ConditionBaseRepository
@@ -12,6 +13,8 @@ from repository import ConditionBaseRepository
 from service.outbox_service import OutboxRegistServiceImpl
 
 from utils import string_utils as string
+
+logger = logging.getLogger(__name__)
 
 # 자주 사용한 검색 조건, 저장 검색 조건을 위한 Service
 class SearchConditionService(ABC):
@@ -23,7 +26,7 @@ class SearchConditionService(ABC):
     def delete_condition(self, userId : str, conditionId : str) : pass
     
     @abstractmethod
-    def selectList(self, userId : str) : pass
+    async def selectList(self, userId : str) : pass
     
     @abstractmethod
     def selectOne(self, conditionId : str) : pass
@@ -96,10 +99,14 @@ class SearchConditionClientServiceImpl(SearchConditionService):
     
     
     
-    def selectList(self, userId : str):
+    async def selectList(self, userId : str):
         '''조회'''
         # 5건만 반환
-        return self.condition_repository.selectListLimit(userId, 5)
+        temp_result = await self.condition_repository.selectListLimit(userId, 5)
+        
+        response = convert_list(temp_result)
+        
+        return response
         
     
     # TODO 한 건만 조회
