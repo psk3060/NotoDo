@@ -18,11 +18,14 @@ class ConditionListResponse(BaseModel):
 
 def convert_vo_to_dto(vo : FrequentlySearchedConditions) -> ConditionDTO:
     return ConditionDTO(
+        # 전환은 프론트엔드에서 진행
         id = str(vo.conditionId),
-        status = notion.to_notion_status_label(vo.saveCondition.get("status")),
-        priority = notion.to_notion_priority_label(vo.saveCondition.get("priority")),
+        # status = notion.to_notion_status_label(vo.saveCondition.get("status")),
+        status = vo.saveCondition.get("status"),
+        # priority = notion.to_notion_priority_label(vo.saveCondition.get("priority")),
+        priority = vo.saveCondition.get("priority"),
         title=vo.saveCondition.get("title"),
-        registDate=vo.registDate.isoformat() if vo.registDate else None
+        # registDate=vo.registDate.isoformat() if vo.registDate else None
     )
     
 def convert_list(temp_result : list[FrequentlySearchedConditions]) -> ConditionListResponse:

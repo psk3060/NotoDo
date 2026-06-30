@@ -215,7 +215,7 @@ export default function TodoListPaging() {
                 <FrequentlyWordModal 
                         isOpen={isOpen} 
                         onClose={() => setIsOpen(false)} 
-                        onApply={(condition) => setSearchParam(condition)} 
+                        onApply={(condition) => { setSearchParam(condition); }} 
                     />
 
             </div>

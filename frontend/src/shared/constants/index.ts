@@ -48,6 +48,9 @@ export const TODO_STATUS_LABEL: Record<TodoStatus, string> = {
 
 export const DEFAULT_TODO_STATUS = TODO_STATUS.PENDING;
 
+export const getTodoStatusLabel = (status: string): string => {
+    return TODO_STATUS_LABEL[status as TodoStatus] ?? status;
+}
 
 export const TODO_PRIORITY = {
   URGENT: 'P1',
@@ -68,6 +71,10 @@ export const TODO_PRIORITY_LABEL: Record<TodoPriority, string> = {
 };
 
 export const DEFAULT_TODO_PRIORITY = TODO_PRIORITY.MEDIUM;
+
+export const getTodoPriorityLabel = (priority: string): string => {
+    return TODO_PRIORITY_LABEL[priority as TodoPriority] ?? priority;
+}
 
 export const TOAST_MESSAGES = {
     AUTH : {
