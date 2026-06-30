@@ -12,7 +12,7 @@ export default function FrequentlyConditionModal({isOpen, onClose, onApply} : Mo
   
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   // 훅은 항상 최상단에 (조건문 이전) - isOpen(enabled 옵션으로 사용하여 fetch 시점 제어)
-  const {conditionList} = useFrequentlyUsedConditionsHook(isOpen);
+  const {conditionList, deleteCondition} = useFrequentlyUsedConditionsHook(isOpen);
   
   // isOpen이 false면 렌더링 안 함
   if (!isOpen) return null;
@@ -20,6 +20,8 @@ export default function FrequentlyConditionModal({isOpen, onClose, onApply} : Mo
   const modalRoot = document.getElementById("modal-root");
 
   if (!modalRoot) return null;
+
+  
 
   const handleCheck = (id : string) => {
     setSelectedIds(prev => {
@@ -44,12 +46,20 @@ export default function FrequentlyConditionModal({isOpen, onClose, onApply} : Mo
     }
   }
 
+  const handleDelete = () => {
+    if (selectedIds.size < 1) return;
+    if(confirm('선택한 조건들을 정말 삭제하시겠습니까?')) {
+      deleteCondition(selectedIds);
+      handleClose();
+    }
+
+  }
 
   return createPortal(
     <div className="modal-overlay">
       <div className="modal-content">
 
-        <div className="container condition-list w-75">
+        <div className="container condition-list">
           <h2 className="text-center my-6">저장된 조건</h2>
           <table className="table table-striped">
             <thead>
@@ -90,7 +100,7 @@ export default function FrequentlyConditionModal({isOpen, onClose, onApply} : Mo
           </table>
 
           <div className="text-end mt-4 me-3 d-grid gap-2 d-md-flex justify-content-md-end">
-            <button className="btn btn-outline-danger btn-sm">선택 삭제</button>
+            <button className="btn btn-outline-danger btn-sm" disabled={selectedIds.size < 1} onClick={handleDelete}>선택 삭제</button>
             <button className="btn btn-outline-dark" onClick={handleClose}>닫기</button>
             {/* 1건만 선택했을 때 적용 가능 */}
             <button className="btn btn-outline-primary" disabled={selectedIds.size !== 1} onClick={handleApply}>적용</button>

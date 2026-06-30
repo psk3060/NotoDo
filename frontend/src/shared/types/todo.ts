@@ -51,3 +51,7 @@ export interface FrequentlyCondition {
     priority : string;
     status : string;
 }
+
+export interface FrequentlyConditionDeleteRequest {
+    selectedIds : string[];
+}

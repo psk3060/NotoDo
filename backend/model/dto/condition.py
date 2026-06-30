@@ -16,6 +16,10 @@ class ConditionListResponse(BaseModel):
     data : List[ConditionDTO] = Field(default_factory=list)    
 
 
+class ConditionDeleteRequestDTO(BaseModel):
+    ids : List[int] = Field(default_factory=list)
+
+
 def convert_vo_to_dto(vo : FrequentlySearchedConditions) -> ConditionDTO:
     return ConditionDTO(
         # 전환은 프론트엔드에서 진행

@@ -138,7 +138,7 @@ export function useTodoListWithHook(pageSize : number) {
                 1. 조회(저장 성공)
                 2. 모달 창 확인 시 최신화 안 되어 있음
                 3. 새로 고침 후 모달 창 확인 시 최신화
-                단, 지속적으로 서버를 확인하는 것을 원하지 않기 때문에, enabled 옵션은 사용해야 하기를 희망(최선)
+                단, 지속적으로 서버를 확인하는 것을 원하지 않기 때문에, enabled 옵션은 사용해야함(최선)
             */
             queryClient.invalidateQueries({ queryKey: ['conditionList'] });
         },
@@ -340,12 +340,14 @@ export function useFrequentlyUsedConditionsHook(enabled : boolean = true) {
     
     const {executeWithAuth} = useApiWithAuth();
     
+    const queryClient = useQueryClient();
+
     const {data, isLoading : isFetching} = useQuery({
         queryKey : ['conditionList'],
         queryFn: () => executeWithAuth(() => todoService.getFrequentlyUsedConditions()),
         enabled,
         throwOnError: () => {
-            toast.error(TOAST_MESSAGES.TODO.CONDITION_FETCH_FAIL);
+            toast.error(TOAST_MESSAGES.CONDITION.CONDITION_FETCH_FAIL);
             return false;
         },
         refetchOnWindowFocus: false,
@@ -354,10 +356,30 @@ export function useFrequentlyUsedConditionsHook(enabled : boolean = true) {
 
     const conditionList = data?.data ?? [];
     
-    const isLoading = isFetching;
+    
+
+    const {mutate : deleteCondition, isPending : isDeleting} = useMutation({
+        mutationFn : (ids : Set<string>) => executeWithAuth(() => todoService.deleteCondition(ids)),
+        
+        // Error Boundry
+        throwOnError: true,
+        onSuccess : () => {
+            toast.success(TOAST_MESSAGES.CONDITION.DELETE_SUCCESS);
+            
+            queryClient.invalidateQueries({ queryKey: ['conditionList'] }); 
+
+        },
+        onError : (_) => {
+            toast.error(TOAST_MESSAGES.CONDITION.DELETE_FAIL);
+        }
+
+    });
+
+    const isLoading = isFetching || isDeleting;
 
     return {
         conditionList,
-        isLoading
+        isLoading,
+        deleteCondition
     }
 }

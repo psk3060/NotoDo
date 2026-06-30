@@ -16,26 +16,18 @@ from utils import string_utils as string
 
 logger = logging.getLogger(__name__)
 
-
-
-
-
 # 자주 사용한 검색 조건, 저장 검색 조건을 위한 Service
 class SearchConditionService(ABC):
     
     @abstractmethod
-    def save_condition(self, userId : str, payload : dict[str, Any]) : pass
+    async def save_condition(self, userId : str, payload : dict[str, Any]) : pass
     
     @abstractmethod
-    def delete_condition(self, userId : str, conditionId : str) : pass
+    async def delete_condition(self, userId : str, conditionId : str) : pass
     
     @abstractmethod
     async def selectList(self, userId : str) : pass
     
-    @abstractmethod
-    def selectOne(self, conditionId : str) : pass
-
-
 class SearchConditionTaskServiceImpl(SearchConditionService):
     '''Task에서 호출하는 검색조건 관리 서비스(등록만 사용)'''
     def __init__(self, session : AsyncSession):
@@ -56,9 +48,9 @@ class SearchConditionTaskServiceImpl(SearchConditionService):
         
         await self.session.commit()
 
-    def delete_condition(self, userId : str, conditionId : str): raise NotImplementedError
+    async def delete_condition(self, userId : str, conditionId : str): raise NotImplementedError
     def selectList(self, userId : str): raise NotImplementedError
-    def selectOne(self, conditionId : str): raise NotImplementedError
+    
 
 
 class SearchConditionClientServiceImpl(SearchConditionService):
@@ -90,16 +82,14 @@ class SearchConditionClientServiceImpl(SearchConditionService):
         
         
         
-    def delete_condition(self, userId : str, conditionId : str):
-        '''저장된 조건 삭제'''
+    async def delete_condition(self, userId : str, selectedIds : list):
+        """저장된 조건 삭제
+            - 플래그를 통해 속성값을 변경하는 방식으로 진행할 수 있으나 중요한 데이터도 아니기에 DELETE 진행"""
+        logger.info(f"userId : {userId}")
+        logger.info(selectedIds)
         
-        # 1. 조회 조건 조회
+        await self.condition_repository.deleteConditionByKey(userId, selectedIds)
         
-        # 2. 조회 조건과 회원 ID 검증
-        
-        # 3. 조회 조건 삭제
-        
-        pass
     
     
     
@@ -113,5 +103,3 @@ class SearchConditionClientServiceImpl(SearchConditionService):
         return response
         
     
-    # TODO 한 건만 조회
-    def selectOne(self): raise NotImplementedError

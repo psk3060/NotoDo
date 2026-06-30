@@ -7,6 +7,8 @@ from service import SearchConditionService, SearchConditionClientServiceImpl
 
 from repository import OutboxDocumentRepository, ConditionBaseRepository
 
+from model import ConditionDeleteRequestDTO
+
 from db.postgres.client_config import get_pg_session
 
 router = APIRouter(
@@ -26,3 +28,8 @@ async def select_usage_condition_list(request: Request, usage_condition_service 
     '''
     return await usage_condition_service.selectList(request.state.user)
 
+
+@router.delete("")
+async def delete_usage_condition(request : Request, requestDto : ConditionDeleteRequestDTO, usage_condition_service : SearchConditionService = Depends(get_condition_service)) : 
+    await usage_condition_service.delete_condition(request.state.user, requestDto.ids)
+    

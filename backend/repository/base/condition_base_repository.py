@@ -1,9 +1,12 @@
-from datetime import datetime
-from sqlalchemy import func, select, update, and_
-from sqlalchemy.orm import selectinload
+import logging
+
+from sqlalchemy import func, select, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from model import FrequentlySearchedConditions
 
+from typing import List
+
+logger = logging.getLogger(__name__)
 class ConditionBaseRepository:
     
     def __init__(self, session : AsyncSession):
@@ -54,9 +57,7 @@ class ConditionBaseRepository:
         
     async def select_object_by_id(self, hash_data) :
         '''한 건만 조회 - Hash Data'''
-        stmt = select(FrequentlySearchedConditions).where(and_(
-                FrequentlySearchedConditions.saveConditionHash == hash_data
-        ))
+        stmt = select(FrequentlySearchedConditions).where(FrequentlySearchedConditions.saveConditionHash == hash_data)
         
         result = await self.session.execute(stmt)
         
@@ -73,6 +74,16 @@ class ConditionBaseRepository:
         
         return result.scalars().all()
     
-    async def deleteCondition(self, hashData):
+    async def deleteConditionByKey(self, userId : str, selectedIds : list):
+        stmt = delete(FrequentlySearchedConditions).where(
+            and_(
+                FrequentlySearchedConditions.userId == userId
+                , FrequentlySearchedConditions.conditionId.in_(selectedIds)
+            )
+        )
         
-        pass
+        await self.session.execute(stmt)
+        
+        await self.session.commit()
+    
+    

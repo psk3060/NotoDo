@@ -1,4 +1,4 @@
-import { CreateTodoPayload, Todo, TodoComment, UpdateTodoPayload } from "@/shared/types";
+import { CreateTodoPayload, Todo, TodoComment, UpdateTodoPayload, FrequentlyConditionDeleteRequest } from "@/shared/types";
 import todoStore from "@/features/todo/stores/todoStore";
 import { getCurrentTimestamp } from "@/shared/utils/date";
 import { ENV } from "@/config/env";
@@ -95,6 +95,20 @@ export async function getFrequentlyUsedConditions() : Promise<FrequentlyConditio
     return response.data;
 
 }
+
+export async function deleteCondition(selectedIds : Set<string>) : Promise<void> {
+
+    /*
+    DEV 추가
+    */
+
+    await apiClient.delete(API_ENDPOINTS.CONDITIONS.BASE, {
+        data: {
+            ids: Array.from(selectedIds)
+        }
+    });
+}
+
 
 function mockGetAllConditionList() {
     return []

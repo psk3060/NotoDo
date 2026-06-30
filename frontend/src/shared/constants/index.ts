@@ -95,7 +95,12 @@ export const TOAST_MESSAGES = {
         CREATE_FAIL : 'Todo 생성에 실패했습니다.',
         CREATE_COMMENT_FAIL : 'Todo 답글 생성에 실패했습니다.',
         UPDATE_FAIL : 'Todo 수정에 실패했습니다.',
+    }, 
+    CONDITION : {
+        CONDITION_FETCH_SUCCESS : '자주 사용하는 조건을 불러오는데 성공했습니다.',
         CONDITION_FETCH_FAIL : '자주 사용하는 조건을 불러오는데 실패했습니다.',
+        DELETE_SUCCESS : '선택한 자주 사용하는 조건이 삭제되었습니다.',
+        DELETE_FAIL : '선택한 자주 사용하는 조건 삭제에 실패했습니다.',
     }
 } as const;
 
