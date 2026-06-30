@@ -1,21 +1,22 @@
 import '@/styles/modal.css';
 
-import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ModalProps } from '@/shared/types';
 import { useFrequentlyUsedConditionsHook } from '@/features/todo/hooks/useTodo';
 
 export default function FrequentlyConditionModal({isOpen, onClose, onApply} : ModalProps) {
+  
+  // 훅은 항상 최상단에 (조건문 이전) - isOpen(enabled 옵션으로 사용하여 fetch 시점 제어)
+  const {conditionList, isLoading} = useFrequentlyUsedConditionsHook(isOpen);
+  
+  // isOpen이 false면 렌더링 안 함
   if (!isOpen) return null;
 
   const modalRoot = document.getElementById("modal-root");
 
   if (!modalRoot) return null;
 
-  const [loading, setLoading] = useState(false);
-
-  // 1. 데이터 조회
-  const {conditionList} = useFrequentlyUsedConditionsHook();
+  
 
   return createPortal(
     <div className="modal-overlay">

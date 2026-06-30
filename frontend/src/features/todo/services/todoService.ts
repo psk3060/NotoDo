@@ -84,17 +84,21 @@ export async function createTodoComment(comment : TodoComment) : Promise<void> {
 export async function getFrequentlyUsedConditions() : Promise<FrequentlyConditionResponse<FrequentlyCondition>> {
 
     // TODO DEV 연동 
-    /*
+    
     if (ENV.IS_DEV) {
-        return null;
+        return {
+            data : mockGetAllConditionList()   
+        }
     }
-    */
+    
     const response = await apiClient.get<FrequentlyConditionResponse<FrequentlyCondition>>(API_ENDPOINTS.TODOS.FREQUENTLY_USED_CONDITIONS);
-
     return response.data;
 
 }
 
+function mockGetAllConditionList() {
+    return []
+}
 
 function mockGetAllTodos() : Todo[] {
     return todoStore.getState().selectAll();

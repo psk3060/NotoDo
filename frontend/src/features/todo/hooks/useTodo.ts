@@ -326,23 +326,25 @@ export function useTodoDetailHook(todoId : string) {
 }
 
 // 자주 사용하는 조건
-export function useFrequentlyUsedConditionsHook() {
+export function useFrequentlyUsedConditionsHook(enabled : boolean = true) {
     
     const {executeWithAuth} = useApiWithAuth();
     
     const {data, isLoading : isFetching} = useQuery({
         queryKey : ['conditionList'],
         queryFn: () => executeWithAuth(() => todoService.getFrequentlyUsedConditions()),
+        enabled,
         throwOnError: () => {
             toast.error(TOAST_MESSAGES.TODO.CONDITION_FETCH_FAIL);
             return false;
         },
         placeholderData : (prev) => prev,
         refetchOnWindowFocus: false,
+        staleTime: Infinity, // 데이터를 항상 fresh로 간주
     });
 
     const conditionList = data?.data ?? [];
-
+    
     const isLoading = isFetching;
 
     return {
