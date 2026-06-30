@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routes.todo import router as todo_router
 from routes.auth import router as auth_router
+from routes.conditions import router as conditions_router
 
 from config.context_manager import lifespan
 from middleware import JWTMiddleware
@@ -30,5 +31,4 @@ app.add_middleware(
 
 app.include_router(todo_router)
 app.include_router(auth_router)
-
-
+app.include_router(conditions_router)

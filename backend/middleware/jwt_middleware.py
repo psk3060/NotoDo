@@ -10,10 +10,15 @@ class JWTMiddleware(BaseHTTPMiddleware):
         
         force_logout = False
         
-        # /todos만 검사
-        if not request.url.path.startswith("/todos"):
+        """/todos/condition_list로 호출할 경우, /todos/create로 Redirect(편법으로 /todos/create를 호출하는 Router보다 위에 작성하면 되긴 하지만)
+            따라서, /conditions를 따로 추가(2026-06-30)
+        """
+        # if not request.url.path.startswith("/todos"):
+        #     return await call_next(request)
+        
+        if not (request.url.path.startswith("/todos") or request.url.path.startswith("/conditions")):
             return await call_next(request)
-
+        
         user_id = request.headers.get("userId")
         
         if not user_id :
