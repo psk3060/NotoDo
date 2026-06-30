@@ -67,9 +67,9 @@ async def _sync_to_notion(event_id : str):
         notion_service = NotionTaskServiceImpl()
         
         if event.event_type == "updated":
-            await notion_service.patch_page(event.todo_id, event.payload["after"])
+            await notion_service.patch_page(event.parent_id, event.payload["after"])
         elif event.event_type == "deleted":
-            await notion_service.patch_page(event.todo_id, {"in_trash" : True})
+            await notion_service.patch_page(event.parent_id, {"in_trash" : True})
         
         event.processed = True
         await event.save()

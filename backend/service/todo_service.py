@@ -13,11 +13,12 @@ from utils import notion_utils as notion
 
 from service.notion_service import NotionService
 from service.condition_service import SearchConditionService
+from service.outbox_service import OutboxRegistServiceImpl
 
 from model import Todo, TodoComment
 from model import OutboxDTO
 
-from repository import TodoBaseRepository, OutboxDocumentRepository
+from repository import TodoBaseRepository
 from model import TodoListRequest, TodoListResponse
 
 from core.notion_container import notion_container
@@ -276,10 +277,10 @@ class DbTodoServiceImpl(TodoService):
 
 
 class HybridTodoServiceImpl(TodoService) :
-    def __init__(self, notion_service: NotionService, todo_repository : TodoBaseRepository, outbox_repository : OutboxDocumentRepository, condition_service : SearchConditionService):
+    def __init__(self, notion_service: NotionService, todo_repository : TodoBaseRepository, outbox_service : OutboxRegistServiceImpl, condition_service : SearchConditionService):
         self.notion_service = notion_service
         self.todo_repository = todo_repository
-        self.outbox_repository = outbox_repository
+        self.outbox_service = outbox_service
         self.condition_service = condition_service
     
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
@@ -351,9 +352,7 @@ class HybridTodoServiceImpl(TodoService) :
             if created_entity.id <= 0 :
                 raise Exception("일정 등록에 실패하였습니다.")
             
-            
-            
-            await self.outbox_repository.insert(
+            await self.outbox_service.insert(
                 dto = OutboxDTO(
                     db_id = created_entity.id, 
                     event_caller = 'todo',
@@ -409,8 +408,7 @@ class HybridTodoServiceImpl(TodoService) :
             # 수정 후 Entity
             updated_entity = await self.todo_repository.update(todo_id, todo_update)
             
-            # outbox 등록
-            outbox = await self.outbox_repository.insert(
+            await self.outbox_service.insert(
                 dto = OutboxDTO(
                     db_id = updated_entity.id,
                     event_caller = 'todo',
@@ -424,13 +422,11 @@ class HybridTodoServiceImpl(TodoService) :
                         "after":  self.todo_repository.to_dict(updated_entity)
                     }
                 ), 
-                processed = False
+                processed = False,
+                queueName = "sync"
             )
             
             await self.todo_repository.commit()
-            
-            # Task 수동 호출
-            sync_celery.send_task("tasks.sync.notion_tasks.sync_to_notion", args=[str(outbox.id)], queue="sync")
             
         except Exception as e:
             print(e)
@@ -457,7 +453,7 @@ class HybridTodoServiceImpl(TodoService) :
             
             deleted_entity = await self.todo_repository.delete(todo_id, user_id)
             
-            outbox = await self.outbox_repository.insert(
+            await self.outbox_service.insert(
                 dto = OutboxDTO (
                     db_id = deleted_entity.id,
                     event_caller = 'todo',
@@ -471,12 +467,11 @@ class HybridTodoServiceImpl(TodoService) :
                         "after":  None
                     }
                 ),
-                processed = False
+                processed = False,
+                queueName = "sync"
             )
             
             await self.todo_repository.commit()
-            
-            sync_celery.send_task("tasks.sync.notion_tasks.sync_to_notion", args=[str(outbox.id)], queue="sync")
             
         except Exception as e:
             print(e)
@@ -515,7 +510,7 @@ class HybridTodoServiceImpl(TodoService) :
             if created_entity.id <= 0 :
                 raise Exception("답글 등록에 실패하였습니다.")
             
-            await self.outbox_repository.insert(
+            await self.outbox_service.insert(
                 dto = OutboxDTO(
                     db_id = created_entity.id,
                     event_caller = 'todo_comment',

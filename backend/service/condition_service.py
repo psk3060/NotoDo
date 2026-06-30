@@ -7,7 +7,9 @@ from tasks.config.celery_config import condition_celery
 from model import OutboxDTO
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from repository import ConditionBaseRepository, OutboxDocumentRepository
+from repository import ConditionBaseRepository
+
+from service.outbox_service import OutboxRegistServiceImpl
 
 from utils import string_utils as string
 
@@ -54,16 +56,16 @@ class SearchConditionTaskServiceImpl(SearchConditionService):
 
 class SearchConditionClientServiceImpl(SearchConditionService):
     '''클라이언트에서 사용하는 Service'''
-    def __init__(self, condition_repository : ConditionBaseRepository, outbox_repository : OutboxDocumentRepository):
+    def __init__(self, condition_repository : ConditionBaseRepository, outbox_service : OutboxRegistServiceImpl):
         self.condition_repository = condition_repository
-        self.outbox_repository = outbox_repository
+        self.outbox_service = outbox_service
 
     async def save_condition(self, userId : str, payload : dict[str, Any]):
-        '''Outbox에 등록 후, Task 호출'''
+        '''조건 저장'''
         
-        # 1. Outbox 등록
-        outbox = await self.outbox_repository.insert(
-                    dto = OutboxDTO(
+        # Outbox에 등록 후, 내부에서 Task 호출
+        await self.outbox_service.insert(
+            dto = OutboxDTO(
                         db_id = None,
                         event_caller = "condition_task",
                         parent_id = None,
@@ -74,14 +76,13 @@ class SearchConditionClientServiceImpl(SearchConditionService):
                         payload = {
                             "condition": payload
                         }
-                    ), 
-                    processed = False
+            ), 
+            processed = False,
+            queueName = "condition"
         )
         
-        # 2. Task 직접 호출
-        condition_celery.send_task("tasks.condition.condition_tasks.task_save_condition_db", args=[str(outbox.id)], queue="condition")
         
-    
+        
     def delete_condition(self, userId : str, conditionId : str):
         '''저장된 조건 삭제'''
         

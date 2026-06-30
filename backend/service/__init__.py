@@ -15,6 +15,8 @@ from .condition_service import SearchConditionService, SearchConditionClientServ
 
 from .user_service import UserService, UserServiceImpl
 
+from .outbox_service import OutboxRegistServiceImpl
+
 __all__ = [
     "TodoService"
     , "LocalTodoServiceImpl", "NotionTodoServiceImpl", "DbTodoServiceImpl", "HybridTodoServiceImpl"
@@ -24,4 +26,5 @@ __all__ = [
     , "NotionApiServiceImpl", "get_notion_service"
     , "SearchConditionService", "SearchConditionClientServiceImpl"
     , "UserService", "UserServiceImpl"
+    , "OutboxRegistServiceImpl"
 ]

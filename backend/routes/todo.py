@@ -4,6 +4,8 @@ from repository import TodoBaseRepository, OutboxDocumentRepository, ConditionBa
 
 from service import SearchConditionService, SearchConditionClientServiceImpl
 from service import get_notion_service
+from service import OutboxRegistServiceImpl
+
 
 from db.postgres.client_config import get_pg_session
 
@@ -25,7 +27,10 @@ router = APIRouter(
 def get_condition_service (
     session : AsyncSession = Depends(get_pg_session)    
 ) -> SearchConditionService: 
-    return SearchConditionClientServiceImpl(ConditionBaseRepository(session), OutboxDocumentRepository)
+    return SearchConditionClientServiceImpl(ConditionBaseRepository(session), OutboxRegistServiceImpl(OutboxDocumentRepository))
+
+def get_outbox_service() -> OutboxRegistServiceImpl :
+    return OutboxRegistServiceImpl(OutboxDocumentRepository)
 
 # 환경변수 읽기
 def get_todo_service(
@@ -40,7 +45,7 @@ def get_todo_service(
         return HybridTodoServiceImpl(
             notion_service = get_notion_service()
             , todo_repository=TodoBaseRepository(session)
-            , outbox_repository=OutboxDocumentRepository
+            , outbox_service = get_outbox_service()
             , condition_service=get_condition_service(session)
         )
     elif ENVIRONMENT == "db_prod":
