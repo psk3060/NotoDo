@@ -4,12 +4,12 @@ from datetime import datetime, timezone, timedelta
 
 from db.mongo.celery_config import init_mongo_for_task, close_mongo_for_task
 
-
 from tasks.config.celery_config import sync_celery
 
 from service.notion_service import NotionTaskServiceImpl
-from model.todo.todo_outbox_model import TodoOutbox
 from tasks.util.task_run_util import run_async
+
+from model import OutboxDocument
 
 from beanie.operators import In
 
@@ -28,9 +28,9 @@ async def find_target():
     mongo_client = await init_mongo_for_task()
 
     try:
-        events = await TodoOutbox.find(
-            In(TodoOutbox.event_type, ["updated", "deleted"])
-            , TodoOutbox.processed == False
+        events = await OutboxDocument.find(
+            In(OutboxDocument.event_type, ["updated", "deleted"])
+            , OutboxDocument.processed == False
         ).to_list()
         logger.info(f"[Outbox Poller] 미처리 건수: {len(events)}")
         
@@ -62,7 +62,7 @@ async def _sync_to_notion(event_id : str):
     mongo_client = await init_mongo_for_task()
     
     try :
-        event = await TodoOutbox.get(event_id)
+        event = await OutboxDocument.get(event_id)
         
         notion_service = NotionTaskServiceImpl()
         

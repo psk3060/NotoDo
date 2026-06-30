@@ -1,18 +1,19 @@
 import logging
-import os, jwt, uuid, json, hashlib
 
 from core.rsa_mamanger import rsa_manager
 
-from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Response, Request
 
 from abc import ABC, abstractmethod
 from utils import network_utils
 from service.ip_service import IpService
 from service.token_service import TokenService
+from service.user_service import UserServiceImpl
 from model import LoginRequest, LoginResponse
-from repository import UserRepository
+
 from utils.security_utils import verify_password
+
+logger = logging.getLogger(__name__)
 
 class AuthService(ABC):
     '''SocialAuthServiceImpl도 추가 가능'''
@@ -25,14 +26,12 @@ class AuthService(ABC):
         pass
     
 
-logger = logging.getLogger(__name__)
-
 class TokenAuthServiceImpl(AuthService):
     
     '''토큰 기반 인증 서비스'''
-    def __init__(self, token_service : TokenService, user_repository : UserRepository, ip_service : IpService) :
+    def __init__(self, token_service : TokenService, user_service : UserServiceImpl, ip_service : IpService) :
         self.token_service = token_service
-        self.user_repository = user_repository
+        self.user_service = user_service
         self.ip_service = ip_service
     
     
@@ -64,7 +63,7 @@ class TokenAuthServiceImpl(AuthService):
             if await self.ip_service.exists_block_ip(ip):
                 raise Exception(f"해당 IP({ip})는 차단된 IP 입니다.")
             
-            user = await self.user_repository.find_by_id(loginRequest.userId)
+            user = await self.user_service.find_by_id(loginRequest.userId)
             
             if not user:
                 raise ValueError("User not found in DB")
@@ -81,6 +80,8 @@ class TokenAuthServiceImpl(AuthService):
             
             # 신규 토큰 발급 및 저장
             await self.token_service.saveToken(loginRequest.userId, 'login', request, response)
+            
+            
             
             # IP COUNT 초기화 - 성공 시
             await self.ip_service.delete_ip(ip)

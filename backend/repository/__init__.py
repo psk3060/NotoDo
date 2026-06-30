@@ -1,5 +1,8 @@
-from .user_repository import UserRepository
-from .todo_outbox_repository import TodoOutboxRepository
-from .todo_repository import TodoRepository
+from . import base, document
+from .base import *
+from .document import *
 
-__all__ = ["UserRepository", "TodoRepository", "TodoOutboxRepository"]
+__all__ = [
+    *base.__all__,
+    *document.__all__
+]

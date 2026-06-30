@@ -5,8 +5,9 @@ from fastapi import HTTPException, Response, Request
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
-from model.auth.refresh_token_log import RefreshTokenLogDTO
-from repository.auth_repository import RefreshTokenLogRepository
+from model import RefreshTokenLogDTO
+from repository import TokenDocumentRepository
+
 from core.redis_container import redis_container
 
 from utils.string_utils import replace_hash_string
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 def get_token_service(token_type : str | None = 'jwt'):
     # token_type 환경변수로
     if token_type == 'jwt':
-        return JwtTokenServiceImpl(RefreshTokenLogRepository())
+        return JwtTokenServiceImpl(TokenDocumentRepository())
     
 
 class TokenService(ABC):
@@ -41,7 +42,7 @@ class TokenService(ABC):
     
 class JwtTokenServiceImpl(TokenService):
     
-    def __init__(self, refresh_token_log_repo: RefreshTokenLogRepository | None = None):
+    def __init__(self, refresh_token_log_repo: TokenDocumentRepository | None = None):
         
         if refresh_token_log_repo:
             self.refresh_token_log_repo = refresh_token_log_repo
@@ -226,7 +227,6 @@ class JwtTokenServiceImpl(TokenService):
         
         await self.refresh_token_log_repo.revoke(revoke_reason="login", user_id = user_id)
         
-    
     
     async def revoke_refresh_token(self, refresh_token : str):
         SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from model import UserInfo
 
-class UserRepository : 
+class UserBaseRepository : 
     def __init__(self, session : AsyncSession):
         self.session = session
         

@@ -1,5 +1,5 @@
 from starlette.middleware.base import BaseHTTPMiddleware
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import Request
 from fastapi.responses import JSONResponse
 import jwt, json
 from utils.token_utils import decodeAccessToken

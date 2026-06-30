@@ -5,13 +5,13 @@ from sqlalchemy import func, select, update, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from utils.notion_convert_utils import to_notion_status_id, to_notion_priority_id
+from utils import notion_utils as notion
 
 from model import Todo, TodoComment
 from model import TodoBase, TodoCommentBase
 from model import TodoListRequest, TodoListResponse
 
-class TodoRepository:
+class TodoBaseRepository:
     def __init__(self, session : AsyncSession):
         self.session = session
     
@@ -183,9 +183,9 @@ class TodoRepository:
     def to_dict(self, entity: TodoBase) -> dict:
         
         properties = {
-            "상태": {"status": {"id": to_notion_status_id(entity.status)}},
+            "상태": {"status": {"id": notion.to_notion_status_id(entity.status)}},
             "작업명": {"title": [{"text": {"content": entity.title}}]},
-            "우선순위": { "select": { "id": to_notion_priority_id(entity.priority) } },
+            "우선순위": { "select": { "id": notion.to_notion_priority_id(entity.priority) } },
         }
         
         if entity.description:

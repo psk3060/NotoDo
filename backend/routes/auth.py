@@ -5,14 +5,14 @@ from fastapi.responses import JSONResponse
 
 from db.postgres.client_config import get_pg_session
 
-
-
 from service import TokenService
-from service.ip_service import RedisManageIpServiceImpl
-from service import get_token_service
-from service.auth_service import AuthService, TokenAuthServiceImpl
+from service import RedisManageIpServiceImpl
+from service import AuthService, TokenAuthServiceImpl
+from service import UserServiceImpl
 
-from repository.user_repository import UserRepository
+from service import get_token_service
+
+from repository import UserBaseRepository
 
 from model import LoginRequest, LoginResponse, PublicKeyResponse
 
@@ -28,11 +28,11 @@ router = APIRouter(
 def get_auth_service(
     session : AsyncSession = Depends(get_pg_session)
 ) -> AuthService:
-    user_repo = UserRepository(session)
-    token_service = get_token_service()
+    user_service = UserServiceImpl(UserBaseRepository(session))
+    token_service = get_token_service('jwt')
     ip_service = RedisManageIpServiceImpl()
     
-    return TokenAuthServiceImpl(token_service=token_service, user_repository=user_repo, ip_service=ip_service)
+    return TokenAuthServiceImpl(token_service=token_service, user_service=user_service, ip_service=ip_service)
 
 
 @router.post("/login", response_model=LoginResponse)

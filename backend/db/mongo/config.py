@@ -2,8 +2,7 @@
 
 import os
 from dotenv import load_dotenv
-from model.todo.todo_outbox_model import TodoCommentOutbox, TodoOutbox
-from model.auth.refresh_token_log import RefreshTokenLog
+from model import OutboxDocument, RefreshTokenLogDocument
 
 load_dotenv()
 
@@ -13,4 +12,4 @@ MONGO_URL = (
     f"?authMechanism=DEFAULT&authSource={os.getenv('MONGO_DATABASE_NAME')}"
 )
 
-DOCUMENT_MODELS = [RefreshTokenLog, TodoOutbox, TodoCommentOutbox]
+DOCUMENT_MODELS = [RefreshTokenLogDocument, OutboxDocument]
