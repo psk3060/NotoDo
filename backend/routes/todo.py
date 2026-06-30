@@ -1,27 +1,38 @@
 import os
 
-from repository import TodoRepository, TodoOutboxRepository
-from config.postgre_setup import get_db
+from repository import TodoBaseRepository, OutboxDocumentRepository, ConditionBaseRepository
+
+from service import SearchConditionService, SearchConditionClientServiceImpl
+from service import get_notion_service
+from service import OutboxRegistServiceImpl
+
+from db.postgres.client_config import get_pg_session
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 
 from service import TodoService, LocalTodoServiceImpl, NotionTodoServiceImpl, DbTodoServiceImpl, HybridTodoServiceImpl
-from service import get_notion_service
 
 from model import Todo, TodoComment, TodoListRequest
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# .env 파일 로드
 router = APIRouter(
     prefix="/todos",
     tags=["todos"]
 )
 
+def get_condition_service (
+    session : AsyncSession = Depends(get_pg_session)    
+) -> SearchConditionService: 
+    return SearchConditionClientServiceImpl(ConditionBaseRepository(session), OutboxRegistServiceImpl(OutboxDocumentRepository))
+
+def get_outbox_service() -> OutboxRegistServiceImpl :
+    return OutboxRegistServiceImpl(OutboxDocumentRepository)
+
 # 환경변수 읽기
 def get_todo_service(
-    session : AsyncSession = Depends(get_db)    
+    session : AsyncSession = Depends(get_pg_session)    
 ) -> TodoService:
     
     ENVIRONMENT = os.getenv("TODO_ENV", "local")
@@ -30,12 +41,13 @@ def get_todo_service(
         return LocalTodoServiceImpl()
     elif ENVIRONMENT == "prod":
         return HybridTodoServiceImpl(
-            notion_service=get_notion_service()
-            , todo_repository=TodoRepository(session)
-            , outbox_repository=TodoOutboxRepository
+            notion_service = get_notion_service()
+            , todo_repository=TodoBaseRepository(session)
+            , outbox_service = get_outbox_service()
+            , condition_service=get_condition_service(session)
         )
     elif ENVIRONMENT == "db_prod":
-        return DbTodoServiceImpl(TodoRepository(session))
+        return DbTodoServiceImpl(TodoBaseRepository(session))
     elif ENVIRONMENT == "notion_prod":
         return NotionTodoServiceImpl(get_notion_service())
     else :
@@ -52,9 +64,9 @@ async def read_todos(
                 request: Request = None,
                 todo_service : TodoService = Depends(get_todo_service)):
     
-    return await todo_service.read_todos(
-                    TodoListRequest(currentPage=currentPage, pageSize=pageSize, userId = request.state.user, title = title, priority=priority, status = status, isPaging=True)
-            )
+        return await todo_service.read_todos(
+            TodoListRequest(currentPage=currentPage, pageSize=pageSize, userId = request.state.user, title = title, priority=priority, status = status, isPaging=True)
+        )
     
 
 @router.get("/create")
@@ -91,3 +103,5 @@ async def update_todo(todo_id : str, todo_update: Todo, request: Request, todo_s
 async def create_todo_comment(todo_id : str, comment : TodoComment, request: Request, todo_service : TodoService = Depends(get_todo_service)) :
     comment.todoId = todo_id
     await todo_service.create_comment(comment, request.cookies.get("access_token"))
+    
+

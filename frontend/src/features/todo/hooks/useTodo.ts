@@ -74,8 +74,20 @@ export function useTodoListWithHook(pageSize : number) {
     useEffect(() => { setCurrentPage(1);}, [pageSize, appliedSearchParam]);
 
     // 조회 시 1 페이지로 초기화
-
+    /*
     const {data, isLoading : isFetching} = useQuery({
+        queryKey : ['todos', currentPage, pageSize, appliedSearchParam],
+        queryFn: () => executeWithAuth(() => todoService.getAllTodosWithPaging(currentPage, pageSize, appliedSearchParam)),
+        throwOnError: () => {
+            toast.error(TOAST_MESSAGES.TODO.FETCH_ALL_FAIL);
+            return false;
+        },
+        placeholderData : (prev) => prev,
+        refetchOnWindowFocus: false,
+    });
+    */
+
+    const {data, isLoading : isFetching, refetch} = useQuery({
         queryKey : ['todos', currentPage, pageSize, appliedSearchParam],
         queryFn: () => executeWithAuth(() => todoService.getAllTodosWithPaging(currentPage, pageSize, appliedSearchParam)),
         throwOnError: () => {
@@ -117,7 +129,19 @@ export function useTodoListWithHook(pageSize : number) {
         deleteTodo,
         searchParam,
         setSearchParam,
-        applySearch: () => setAppliedSearchParam(searchParam),
+        // 검색조건 동일할 경우, 검색 버튼 재작동 하고 싶을 경우(Tanstack 동작 원리 이해부터)
+        // applySearch: () => {refetch(); setAppliedSearchParam(searchParam)},
+        applySearch: () => {
+            setAppliedSearchParam(searchParam);
+            // 저장 성공 시 캐시 무효화
+            /*
+                1. 조회(저장 성공)
+                2. 모달 창 확인 시 최신화 안 되어 있음
+                3. 새로 고침 후 모달 창 확인 시 최신화
+                단, 지속적으로 서버를 확인하는 것을 원하지 않기 때문에, enabled 옵션은 사용해야함(최선)
+            */
+            queryClient.invalidateQueries({ queryKey: ['conditionList'] });
+        },
         resetSearch: () => {
             setSearchParam({ title: '', status: '', priority: '' });
             setAppliedSearchParam({ title: '', status: '', priority: '' });
@@ -309,4 +333,53 @@ export function useTodoDetailHook(todoId : string) {
     }
     
 
+}
+
+// 자주 사용하는 조건
+export function useFrequentlyUsedConditionsHook(enabled : boolean = true) {
+    
+    const {executeWithAuth} = useApiWithAuth();
+    
+    const queryClient = useQueryClient();
+
+    const {data, isLoading : isFetching} = useQuery({
+        queryKey : ['conditionList'],
+        queryFn: () => executeWithAuth(() => todoService.getFrequentlyUsedConditions()),
+        enabled,
+        throwOnError: () => {
+            toast.error(TOAST_MESSAGES.CONDITION.CONDITION_FETCH_FAIL);
+            return false;
+        },
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 5
+    });
+
+    const conditionList = data?.data ?? [];
+    
+    
+
+    const {mutate : deleteCondition, isPending : isDeleting} = useMutation({
+        mutationFn : (ids : Set<string>) => executeWithAuth(() => todoService.deleteCondition(ids)),
+        
+        // Error Boundry
+        throwOnError: true,
+        onSuccess : () => {
+            toast.success(TOAST_MESSAGES.CONDITION.DELETE_SUCCESS);
+            
+            queryClient.invalidateQueries({ queryKey: ['conditionList'] }); 
+
+        },
+        onError : (_) => {
+            toast.error(TOAST_MESSAGES.CONDITION.DELETE_FAIL);
+        }
+
+    });
+
+    const isLoading = isFetching || isDeleting;
+
+    return {
+        conditionList,
+        isLoading,
+        deleteCondition
+    }
 }

@@ -44,3 +44,14 @@ export interface TodoComment {
 }
 
 export interface UpdateTodoPayload extends Todo {}
+
+export interface FrequentlyCondition {
+    id:string;
+    title : string;
+    priority : string;
+    status : string;
+}
+
+export interface FrequentlyConditionDeleteRequest {
+    selectedIds : string[];
+}

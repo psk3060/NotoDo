@@ -1,11 +1,11 @@
-import { CreateTodoPayload, Todo, TodoComment, UpdateTodoPayload } from "@/shared/types";
+import { CreateTodoPayload, Todo, TodoComment, UpdateTodoPayload, FrequentlyConditionDeleteRequest } from "@/shared/types";
 import todoStore from "@/features/todo/stores/todoStore";
 import { getCurrentTimestamp } from "@/shared/utils/date";
 import { ENV } from "@/config/env";
 import { API_ENDPOINTS } from "@/shared/constants";
 import { apiClient } from "@/config/apiClient";
 import {generateId} from "@/shared/utils/string";
-import type {PagedResponse, SearchParam} from '@/shared/types'
+import type {FrequentlyCondition, FrequentlyConditionResponse, PagedResponse, SearchParam} from '@/shared/types'
 
 export async function getAllTodos() : Promise<Todo[]> {
     if(ENV.IS_DEV) {
@@ -80,6 +80,39 @@ export async function createTodoComment(comment : TodoComment) : Promise<void> {
     await apiClient.post(API_ENDPOINTS.TODOS.COMMENT(comment.todoId), comment);
 }
 
+
+export async function getFrequentlyUsedConditions() : Promise<FrequentlyConditionResponse<FrequentlyCondition>> {
+
+    // TODO DEV 연동 
+    
+    if (ENV.IS_DEV) {
+        return {
+            data : mockGetAllConditionList()   
+        }
+    }
+    
+    const response = await apiClient.get<FrequentlyConditionResponse<FrequentlyCondition>>(API_ENDPOINTS.CONDITIONS.BASE);
+    return response.data;
+
+}
+
+export async function deleteCondition(selectedIds : Set<string>) : Promise<void> {
+
+    /*
+    DEV 추가
+    */
+
+    await apiClient.delete(API_ENDPOINTS.CONDITIONS.BASE, {
+        data: {
+            ids: Array.from(selectedIds)
+        }
+    });
+}
+
+
+function mockGetAllConditionList() {
+    return []
+}
 
 function mockGetAllTodos() : Todo[] {
     return todoStore.getState().selectAll();
@@ -157,3 +190,5 @@ function mockUpdateTodo(todoId : string, payload : UpdateTodoPayload) : void {
 function mockDeleteTodo(todoId : string) : void {
     todoStore.getState().deleteById(todoId);
 }
+
+

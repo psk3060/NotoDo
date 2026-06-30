@@ -1,23 +1,33 @@
+import logging
 import math
 import uuid, json
 
-from tasks.celery_app import celery
 from dotenv import load_dotenv
 from abc import ABC, abstractmethod
 
+from tasks.config.celery_config import sync_celery
+
 from utils.token_utils import decodeAccessToken
+
+from utils import notion_utils as notion
+
 from service.notion_service import NotionService
-from model.todo.todo_outbox_model import TodoCommentOutboxDTO, TodoOutboxDTO
-from utils.notion_convert_utils import from_notion_status_id, from_notion_priority_id, to_notion_status_id, to_notion_priority_id, sync_notion_status, sync_notion_priority, to_notion_status_value, to_notion_priority_value
-from repository import TodoRepository, TodoOutboxRepository
-from model import TodoListRequest, TodoListResponse
+from service.condition_service import SearchConditionService
+from service.outbox_service import OutboxRegistServiceImpl
+
 from model import Todo, TodoComment
-from model import notion_state
+from model import OutboxDTO
+
+from repository import TodoBaseRepository
+from model import TodoListRequest, TodoListResponse
+
+from core.notion_container import notion_container
+
 from datetime import timezone, timedelta
 
-from utils.notion_utils import get_date_time, get_date, get_select, get_select_name, get_status, get_status_name, get_text
-
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 class TodoService(ABC):
     @abstractmethod
@@ -113,8 +123,8 @@ class NotionTodoServiceImpl(TodoService):
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         todos = []
 
-        if len(notion_state.data_sources) > 0:
-            source = notion_state.data_sources[0]
+        if len(notion_container.data_sources) > 0:
+            source = notion_container.data_sources[0]
         
         filter = {}
         
@@ -135,11 +145,11 @@ class NotionTodoServiceImpl(TodoService):
 
             todo = Todo(
                     id=page["id"],
-                    title = get_text(props, "작업명"),
-                    status = get_status_name(props, "상태"),
-                    registDate = get_date_time(page, 'created_time'),
-                    deadline = get_date(props, '마감일'),
-                    priority = get_select_name(props, "우선순위")
+                    title = notion.get_text(props, "작업명"),
+                    status = notion.get_status_name(props, "상태"),
+                    registDate = notion.get_date_time(page, 'created_time'),
+                    deadline = notion.get_date(props, '마감일'),
+                    priority = notion.get_select_name(props, "우선순위")
             )
                 
             todos.append(todo)
@@ -172,12 +182,12 @@ class NotionTodoServiceImpl(TodoService):
 
             todo = Todo(
                 id=page["id"],
-                title = get_text(props, "작업명"),
-                description = get_text(props, "설명"),
-                status = from_notion_status_id(get_status(props, "상태")),
-                registDate = get_date_time(page, 'created_time'),
-                deadline = get_date(props, '마감일'),
-                priority = from_notion_priority_id(get_select(props, "우선순위"))
+                title = notion.get_text(props, "작업명"),
+                description = notion.get_text(props, "설명"),
+                status = notion.from_notion_status_id(notion.get_status(props, "상태")),
+                registDate = notion.get_date_time(page, 'created_time'),
+                deadline = notion.get_date(props, '마감일'),
+                priority = notion.from_notion_priority_id(notion.get_select(props, "우선순위"))
             )
         
         if todo:
@@ -207,14 +217,14 @@ class NotionTodoServiceImpl(TodoService):
 
 class DbTodoServiceImpl(TodoService):
     
-    def __init__(self, todo_repository : TodoRepository):
+    def __init__(self, todo_repository : TodoBaseRepository):
         self.todo_repository = todo_repository
     
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         temp_result = await self.todo_repository.select_list(listRequest)
         
         converted_data = [
-            item.model_copy(update={"status": sync_notion_status(item.status), "priority" : sync_notion_priority(item.priority)})
+            item.model_copy(update={"status": notion.sync_notion_status(item.status), "priority" : notion.sync_notion_priority(item.priority)})
             for item in temp_result.data
         ]
 
@@ -226,8 +236,8 @@ class DbTodoServiceImpl(TodoService):
 
     async def create_todo(self, todo : Todo):
         todo.todoId = str(uuid.uuid4())
-        todo.status = to_notion_status_id(todo.status)
-        todo.priority = to_notion_priority_id(todo.priority)
+        todo.status = notion.to_notion_status_id(todo.status)
+        todo.priority = notion.to_notion_priority_id(todo.priority)
         
         return await self.todo_repository.create_todo(todo)
     
@@ -238,8 +248,8 @@ class DbTodoServiceImpl(TodoService):
         
         if temp_result:
             temp_result.registDate = temp_result.registDate.astimezone(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
-            temp_result.status = from_notion_status_id(temp_result.status)
-            temp_result.priority = from_notion_priority_id(temp_result.priority)
+            temp_result.status = notion.from_notion_status_id(temp_result.status)
+            temp_result.priority = notion.from_notion_priority_id(temp_result.priority)
         
         return temp_result
         
@@ -251,8 +261,8 @@ class DbTodoServiceImpl(TodoService):
     # 수정
     async def update_todo(self, todo_id : str, todo_update: Todo) :
         
-        todo_update.status = to_notion_status_id(todo_update.status)
-        todo_update.priority = to_notion_priority_id(todo_update.priority)
+        todo_update.status = notion.to_notion_status_id(todo_update.status)
+        todo_update.priority = notion.to_notion_priority_id(todo_update.priority)
         
         if todo_id == todo_update.id:
             await self.todo_repository.update(todo_id, todo_update)
@@ -267,11 +277,12 @@ class DbTodoServiceImpl(TodoService):
 
 
 class HybridTodoServiceImpl(TodoService) :
-    def __init__(self, notion_service: NotionService, todo_repository : TodoRepository, outbox_repository : TodoOutboxRepository):
+    def __init__(self, notion_service: NotionService, todo_repository : TodoBaseRepository, outbox_service : OutboxRegistServiceImpl, condition_service : SearchConditionService):
         self.notion_service = notion_service
         self.todo_repository = todo_repository
-        self.outbox_repository = outbox_repository
-        
+        self.outbox_service = outbox_service
+        self.condition_service = condition_service
+    
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         total = 0
         totalPages = 0
@@ -282,7 +293,7 @@ class HybridTodoServiceImpl(TodoService) :
             temp_result = await self.todo_repository.select_list(listRequest)
             
             converted_data = [
-                item.model_copy(update={"status": to_notion_status_value(item.status), "priority" : to_notion_priority_value(item.priority)})
+                item.model_copy(update={"status": notion.to_notion_status_label(item.status), "priority" : notion.to_notion_priority_label(item.priority)})
                 for item in temp_result.data
             ]
             
@@ -291,7 +302,18 @@ class HybridTodoServiceImpl(TodoService) :
             
         except Exception as e:
             print(e)
-            
+        finally : 
+            if listRequest.status != '' or listRequest.priority != '' or listRequest.title != '' :
+                
+                conditions = {}
+                
+                conditions["status"] = listRequest.status
+                conditions["priority"] = listRequest.priority
+                conditions["title"] = listRequest.title
+                
+                # 조회 조건 저장
+                await self.condition_service.save_condition(listRequest.userId, conditions)
+                
         
         return TodoListResponse(
                 data=converted_data,
@@ -330,10 +352,12 @@ class HybridTodoServiceImpl(TodoService) :
             if created_entity.id <= 0 :
                 raise Exception("일정 등록에 실패하였습니다.")
             
-            await self.outbox_repository.insert(
-                dto = TodoOutboxDTO(
+            await self.outbox_service.insert(
+                dto = OutboxDTO(
                     db_id = created_entity.id, 
-                    todo_id = created_entity.todoId, 
+                    event_caller = 'todo',
+                    parent_id = created_entity.todoId, 
+                    child_id = None,
                     event_type = 'created', 
                     user_id = created_entity.userId, 
                     token_jti = access_token_payload["jti"], 
@@ -347,7 +371,9 @@ class HybridTodoServiceImpl(TodoService) :
             
             await self.todo_repository.commit()
         except Exception as e:
-            print(e)
+            
+            logger.error(e)
+            
             await self.todo_repository.rollback()
             
             # 노션에서 삭제
@@ -382,11 +408,12 @@ class HybridTodoServiceImpl(TodoService) :
             # 수정 후 Entity
             updated_entity = await self.todo_repository.update(todo_id, todo_update)
             
-            # outbox 등록
-            outbox = await self.outbox_repository.insert(
-                dto = TodoOutboxDTO(
+            await self.outbox_service.insert(
+                dto = OutboxDTO(
                     db_id = updated_entity.id,
-                    todo_id = updated_entity.todoId, 
+                    event_caller = 'todo',
+                    parent_id = updated_entity.todoId, 
+                    child_id = None,
                     event_type = 'updated', 
                     user_id = updated_entity.userId, 
                     token_jti = access_token_payload["jti"], 
@@ -395,12 +422,11 @@ class HybridTodoServiceImpl(TodoService) :
                         "after":  self.todo_repository.to_dict(updated_entity)
                     }
                 ), 
-                processed = False
+                processed = False,
+                queueName = "sync"
             )
             
             await self.todo_repository.commit()
-            
-            celery.send_task("tasks.tasks.sync_to_notion", args=[str(outbox.id)])
             
         except Exception as e:
             print(e)
@@ -427,24 +453,25 @@ class HybridTodoServiceImpl(TodoService) :
             
             deleted_entity = await self.todo_repository.delete(todo_id, user_id)
             
-            outbox = await self.outbox_repository.insert(
-                dto = TodoOutboxDTO(
+            await self.outbox_service.insert(
+                dto = OutboxDTO (
                     db_id = deleted_entity.id,
-                    todo_id = deleted_entity.todoId, 
+                    event_caller = 'todo',
+                    parent_id = deleted_entity.todoId, 
+                    child_id = None,
                     event_type = 'deleted', 
                     user_id = deleted_entity.userId, 
                     token_jti = access_token_payload["jti"], 
                     payload = {
-                        "before": self.todo_repository.to_dict(deleted_entity, True),
+                        "before": self.todo_repository.to_dict(deleted_entity),
                         "after":  None
                     }
-                ), 
-                processed = False
+                ),
+                processed = False,
+                queueName = "sync"
             )
             
             await self.todo_repository.commit()
-            
-            celery.send_task("tasks.tasks.sync_to_notion", args=[str(outbox.id)])
             
         except Exception as e:
             print(e)
@@ -483,21 +510,22 @@ class HybridTodoServiceImpl(TodoService) :
             if created_entity.id <= 0 :
                 raise Exception("답글 등록에 실패하였습니다.")
             
-            await self.outbox_repository.insertComment(
-                dto = TodoCommentOutboxDTO(
+            await self.outbox_service.insert(
+                dto = OutboxDTO(
                     db_id = created_entity.id,
-                    todo_id = created_entity.todoId, 
-                    comment_id = created_entity.commentId,
+                    event_caller = 'todo_comment',
+                    parent_id = created_entity.todoId, 
+                    child_id = created_entity.commentId, 
                     event_type = 'created', 
                     token_jti = access_token_payload["jti"], 
                     payload = {
                         "before": None,
                         "after":  self.todo_repository.to_comment_dict(created_entity)
                     }
-                ), 
+                )
+                , 
                 processed = True
             )
-            
             
             await self.todo_repository.commit()
         except Exception as e:

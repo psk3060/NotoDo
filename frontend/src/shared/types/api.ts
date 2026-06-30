@@ -31,3 +31,22 @@ export interface SearchParam {
     status: string,
     priority: string,
 }
+
+export interface FrequentlyConditionSearchParam {
+    selectedId? : string;
+    title?: string;
+    status?: string;
+    priority?: string;
+}
+
+export interface ModalProps {
+    isOpen : boolean;
+    onClose : () => void;
+    onApply : (condition: SearchParam) => void;
+}
+
+// 자주 사용하는 단어, 문구에 대한 인터페이스 정의(무조건 5개만 조회)
+export interface FrequentlyConditionResponse<T> {
+    data: T[];
+    message? : string;
+}

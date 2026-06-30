@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from config.redis_setup import redis_container
+from core.redis_container import redis_container
 
 import time
 import uuid

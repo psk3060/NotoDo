@@ -1,16 +1,21 @@
 from abc import ABC, abstractmethod
 
-from utils.notion_utils import get_date_time
-from utils.notion_convert_utils  import to_notion_status_id, to_notion_status_value, to_notion_priority_id, to_notion_priority_value
 from utils.string_utils import ensure_uuid
 
-from model.todo.todo_model import Todo, TodoComment
+from utils import notion_utils as notion
+
+from model import Todo, TodoComment
+
 import os, httpx
 from dotenv import load_dotenv
 
-from model import NotionState, notion_state
+from core.notion_container import NotionContainer, notion_container
 
 from httpx import HTTPStatusError
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -26,6 +31,7 @@ def get_notion_headers() -> dict:
     }
 
 def get_notion_service() :
+    '''확장이 가능하기 때문에 메소드로 작성'''
     return NotionApiServiceImpl()
     
     
@@ -46,8 +52,8 @@ class NotionService(ABC):
         res.raise_for_status()
         return res.json()
 
-    async def patch(self, url : str, json:dict):
-        res = await self.client.patch(url, headers=self.headers, json=json)
+    async def patch(self, todo_id : str, json:dict):
+        res = await self.client.patch(f"https://api.notion.com/v1/pages/{todo_id}", headers=self.headers, json=json)
         res.raise_for_status()
         return res.json()
     
@@ -55,7 +61,7 @@ class NotionService(ABC):
         await self.client.aclose()
     
     @abstractmethod
-    def retrieve_database() -> NotionState:
+    def retrieve_database() -> NotionContainer:
         pass
     
     @abstractmethod
@@ -107,16 +113,16 @@ class NotionApiServiceImpl(NotionService):
     async def close(self):
         await self.client.aclose()
     
-    async def retrieve_database(self) -> NotionState:
+    async def retrieve_database(self) -> NotionContainer:
         
         url = f"https://api.notion.com/v1/databases/{os.getenv('NOTION_DATABASE_ID')}"
         
         try:
-            notion_state.database = await self.get(url)
+            notion_container.database = await self.get(url)
             
-            notion_state.data_sources = notion_state.database.get("data_sources", [])
+            notion_container.data_sources = notion_container.database.get("data_sources", [])
             
-            return notion_state
+            return notion_container
             
         except HTTPStatusError as e:
             return None
@@ -153,10 +159,10 @@ class NotionApiServiceImpl(NotionService):
                 filter_list.append({ "title" : {"contains": filter['작업명']}, "property" : "작업명" })
             
             if "상태" in filter:
-                filter_list.append({ "status": { "equals": to_notion_status_value(filter['상태']) }, "property" : "상태" })
+                filter_list.append({ "status": { "equals": notion.to_notion_status_label(filter['상태']) }, "property" : "상태" })
             
             if "우선순위" in filter:
-                filter_list.append({ "select": { "equals": to_notion_priority_value(filter['우선순위']) }, "property" : "우선순위" })
+                filter_list.append({ "select": { "equals": notion.to_notion_priority_label(filter['우선순위']) }, "property" : "우선순위" })
             
             payload["filter"] = {
                 "and" : filter_list
@@ -222,9 +228,9 @@ class NotionApiServiceImpl(NotionService):
         url = "https://api.notion.com/v1/pages"
 
         properties = {
-            "상태": {"status": {"id": to_notion_status_id(todo.status)}},
+            "상태": {"status": {"id": notion.to_notion_status_id(todo.status)}},
             "작업명": {"title": [{"text": {"content": todo.title}}]},
-            "우선순위": { "select": { "id": to_notion_priority_id(todo.priority) } },
+            "우선순위": { "select": { "id": notion.to_notion_priority_id(todo.priority) } },
         }
 
         if todo.description:
@@ -239,7 +245,7 @@ class NotionApiServiceImpl(NotionService):
 
         # TODO DataSource 선택 가능하도록 확장
         payload = {
-            "parent": {"data_source_id": notion_state.data_sources[0]["id"]},
+            "parent": {"data_source_id": notion_container.data_sources[0]["id"]},
             "properties": properties
         }
         
@@ -260,16 +266,14 @@ class NotionApiServiceImpl(NotionService):
         
     async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
         
-        url = f"https://api.notion.com/v1/pages/{todo_id}"
-        
         properties = {}
         
         if todo:
             
             properties = {
-                "상태": {"status": {"id": to_notion_status_id(todo.status)}},
+                "상태": {"status": {"id": notion.to_notion_status_id(todo.status)}},
                 "작업명": {"title": [{"text": {"content": todo.title}}]},
-                "우선순위": { "select": { "id": to_notion_priority_id(todo.priority) } },
+                "우선순위": { "select": { "id": notion.to_notion_priority_id(todo.priority) } },
             }
             
             if todo.description:
@@ -294,8 +298,9 @@ class NotionApiServiceImpl(NotionService):
             "in_trash" : is_trash
         }
         
+        
         try :
-            await self.patch(url, json = payload)
+            await self.patch(todo_id, json = payload)
         except HTTPStatusError as e:
             raise e
         
@@ -316,7 +321,7 @@ class NotionApiServiceImpl(NotionService):
                     "id" : comment["id"]
                     , "body" : comment["rich_text"][0]['plain_text']
                     , "author" : comment["display_name"]['resolved_name']
-                    , "lastModified" : get_date_time(comment, "last_edited_time")
+                    , "lastModified" : notion.get_date_time(comment, "last_edited_time")
                 }
                 for comment in comments["results"]
             ] 
@@ -362,24 +367,32 @@ class NotionApiServiceImpl(NotionService):
 
 class NotionTaskServiceImpl(NotionService):
     
-    async def retrieve_database(self) -> NotionState:
-        pass
-
-    async def query_datasource(self, data_source_id : str, filter: dict | None = None) :
+    def __init__(self):
+        self.headers = get_notion_headers()
+        self.client = httpx.AsyncClient(headers=self.headers)
+    
+    def retrieve_database() -> NotionContainer:
         pass
     
-    async def retrieve_page(self, page_id : str) : 
+    def query_datasource(data_source_id : str, filter: dict | None = None) -> dict :
         pass
     
-    async def create_page(self, todo : Todo):
+    def retrieve_page(page_id : str) -> dict : 
         pass
-        
-    async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
-        
-        url = f"https://api.notion.com/v1/pages/{todo_id}"
+    
+    def create_page(todo : Todo) -> dict :
+        pass
+    
+    def retrieve_reply_list( page_id : str) -> list:
+        pass
+    
+    def create_reply(comment : TodoComment) -> dict :
+        pass
+    
+    async def patch_page(self, todo_id : str, body : dict | None = None) -> dict :
         
         try :
-            await self.patch(url, json = todo)
+            await self.patch(todo_id, json = body)
         except HTTPStatusError as e:
             raise e
         
@@ -389,8 +402,3 @@ class NotionTaskServiceImpl(NotionService):
             "message" : ""
         }
     
-    def retrieve_reply_list(self, page_id : str):
-        pass
-    
-    async def create_reply(self, comment : TodoComment) -> dict :
-        pass
