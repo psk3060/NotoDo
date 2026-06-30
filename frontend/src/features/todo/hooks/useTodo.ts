@@ -131,7 +131,17 @@ export function useTodoListWithHook(pageSize : number) {
         setSearchParam,
         // 검색조건 동일할 경우, 검색 버튼 재작동 하고 싶을 경우(Tanstack 동작 원리 이해부터)
         // applySearch: () => {refetch(); setAppliedSearchParam(searchParam)},
-        applySearch: () => setAppliedSearchParam(searchParam),
+        applySearch: () => {
+            setAppliedSearchParam(searchParam);
+            // 저장 성공 시 캐시 무효화
+            /*
+                1. 조회(저장 성공)
+                2. 모달 창 확인 시 최신화 안 되어 있음
+                3. 새로 고침 후 모달 창 확인 시 최신화
+                단, 지속적으로 서버를 확인하는 것을 원하지 않기 때문에, enabled 옵션은 사용해야 하기를 희망(최선)
+            */
+            queryClient.invalidateQueries({ queryKey: ['conditionList'] });
+        },
         resetSearch: () => {
             setSearchParam({ title: '', status: '', priority: '' });
             setAppliedSearchParam({ title: '', status: '', priority: '' });
@@ -338,9 +348,8 @@ export function useFrequentlyUsedConditionsHook(enabled : boolean = true) {
             toast.error(TOAST_MESSAGES.TODO.CONDITION_FETCH_FAIL);
             return false;
         },
-        placeholderData : (prev) => prev,
         refetchOnWindowFocus: false,
-        staleTime: Infinity, // 데이터를 항상 fresh로 간주
+        staleTime: 1000 * 60 * 5
     });
 
     const conditionList = data?.data ?? [];

@@ -16,8 +16,6 @@ export default function FrequentlyConditionModal({isOpen, onClose, onApply} : Mo
 
   if (!modalRoot) return null;
 
-  
-
   return createPortal(
     <div className="modal-overlay">
       <div className="modal-content">
@@ -43,7 +41,7 @@ export default function FrequentlyConditionModal({isOpen, onClose, onApply} : Mo
                   </tr>
                 ) : (
                   conditionList.map((condition, _) => (
-                    <tr style={{ height: '10px' }} className="align-middle">
+                    <tr key={condition.id} style={{ height: '10px' }} className="align-middle">
                       <td><input type="checkbox"></input></td>
                       <td>{condition.title}</td>
                       <td>{condition.status}</td>
