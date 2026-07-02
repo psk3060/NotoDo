@@ -30,9 +30,11 @@ def get_condition_service (
 def get_outbox_service() -> OutboxRegistServiceImpl :
     return OutboxRegistServiceImpl(OutboxDocumentRepository)
 
+
 # 환경변수 읽기
 def get_todo_service(
-    session : AsyncSession = Depends(get_pg_session)    
+    request : Request
+    , session : AsyncSession = Depends(get_pg_session)    
 ) -> TodoService:
     
     ENVIRONMENT = os.getenv("TODO_ENV", "local")
@@ -41,7 +43,7 @@ def get_todo_service(
         return LocalTodoServiceImpl()
     elif ENVIRONMENT == "prod":
         return HybridTodoServiceImpl(
-            notion_service = get_notion_service()
+            notion_service = get_notion_service(request)
             , todo_repository=TodoBaseRepository(session)
             , outbox_service = get_outbox_service()
             , condition_service=get_condition_service(session)
@@ -49,21 +51,21 @@ def get_todo_service(
     elif ENVIRONMENT == "db_prod":
         return DbTodoServiceImpl(TodoBaseRepository(session))
     elif ENVIRONMENT == "notion_prod":
-        return NotionTodoServiceImpl(get_notion_service())
+        return NotionTodoServiceImpl(get_notion_service(request))
     else :
         raise ValueError(f"Unknown environment: {ENVIRONMENT}")
     
 
 @router.get("")
 async def read_todos(
-                currentPage: int = Query(default=0),
-                pageSize: int = Query(default=10),
-                title : str = Query(default = ""),
-                priority : str = Query(default = ""),
-                status : str = Query(default = ""),
-                request: Request = None,
-                todo_service : TodoService = Depends(get_todo_service)):
-    
+                currentPage: int = Query(default=0)
+                , pageSize: int = Query(default=10)
+                , title : str = Query(default = "")
+                , priority : str = Query(default = "")
+                , status : str = Query(default = "")
+                , request: Request = None
+                , todo_service : TodoService = Depends(get_todo_service)):
+
         return await todo_service.read_todos(
             TodoListRequest(currentPage=currentPage, pageSize=pageSize, userId = request.state.user, title = title, priority=priority, status = status, isPaging=True)
         )
@@ -85,7 +87,8 @@ async def read_todo_detail(todo_id: str, request: Request, todo_service : TodoSe
     return todo
     
 @router.post("")
-async def create_todo(todo : Todo, request: Request, todo_service : TodoService = Depends(get_todo_service)):
+async def create_todo(todo : Todo, request: Request
+                    , todo_service : TodoService = Depends(get_todo_service)):
     todo.userId = request.state.user
     
     await todo_service.create_todo(todo, request.cookies.get("access_token")) 

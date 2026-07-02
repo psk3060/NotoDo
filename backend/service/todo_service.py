@@ -21,8 +21,6 @@ from model import OutboxDTO
 from repository import TodoBaseRepository
 from model import TodoListRequest, TodoListResponse
 
-from core.notion_container import notion_container
-
 from datetime import timezone, timedelta
 
 load_dotenv()
@@ -31,31 +29,32 @@ logger = logging.getLogger(__name__)
 
 class TodoService(ABC):
     @abstractmethod
-    def read_todos(listRequest : TodoListRequest) -> TodoListResponse:
+    def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         pass
     
     @abstractmethod
-    def read_todo_detail(todo_id: str, user_id : str = None):
+    def read_todo_detail(self, todo_id: str, user_id : str = None):
         pass
         
     @abstractmethod
-    def create_todo(todo : Todo, access_token : str = None):
+    def create_todo(self, todo : Todo, access_token : str = None):
         pass
 
     @abstractmethod
-    def delete_todo(todo_id : str, user_id : str = None, access_token : str = None) :
+    def delete_todo(self, todo_id : str, user_id : str = None, access_token : str = None) :
         pass
     
     @abstractmethod
-    def update_todo(todo_id : str, todo_update: Todo, access_token : str = None) :
+    def update_todo(self, todo_id : str, todo_update: Todo, access_token : str = None) :
         pass
     
     @abstractmethod
-    def create_comment(comment : TodoComment, access_token : str = None) :
+    def create_comment(self, comment : TodoComment, access_token : str = None) :
         pass
     
 
 class LocalTodoServiceImpl(TodoService):
+    """Local 환경에서 테스트용으로 사용되는 TodoService 구현체(Notion 연결 X. DB 연결 X)"""
     def __init__(self):
         self.todo_list = []
         self.todo_list.append(Todo(id = str(uuid.uuid4()), title = "Sample Todo", status = "Pending", registDate = "2025-02-06 17:30", deadline = "2025-02-10", description = "This is a sample", userId = "demo"))
@@ -116,6 +115,7 @@ class LocalTodoServiceImpl(TodoService):
 
 
 class NotionTodoServiceImpl(TodoService):
+    """Notion과 연동이 되는 구현체(컨테이너 필요)"""
     
     def __init__(self, notion_service: NotionService):
         self.notion_service = notion_service
@@ -123,9 +123,6 @@ class NotionTodoServiceImpl(TodoService):
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         todos = []
 
-        if len(notion_container.data_sources) > 0:
-            source = notion_container.data_sources[0]
-        
         filter = {}
         
         if listRequest :
@@ -136,7 +133,7 @@ class NotionTodoServiceImpl(TodoService):
             if listRequest.status and listRequest.status != '':
                 filter['상태'] = listRequest.status
         
-        result = await self.notion_service.query_datasource(source["id"], filter)
+        result = await self.notion_service.query_datasource(filter)
         
         pages = result['pages']
         
@@ -216,6 +213,7 @@ class NotionTodoServiceImpl(TodoService):
 
 
 class DbTodoServiceImpl(TodoService):
+    """DB와 연동되는 구현체(Notion 연결 X)"""
     
     def __init__(self, todo_repository : TodoBaseRepository):
         self.todo_repository = todo_repository
@@ -277,6 +275,8 @@ class DbTodoServiceImpl(TodoService):
 
 
 class HybridTodoServiceImpl(TodoService) :
+    
+    """DB와 Notion 모두 연동하는 구현체(컨테이너 필요)"""
     def __init__(self, notion_service: NotionService, todo_repository : TodoBaseRepository, outbox_service : OutboxRegistServiceImpl, condition_service : SearchConditionService):
         self.notion_service = notion_service
         self.todo_repository = todo_repository

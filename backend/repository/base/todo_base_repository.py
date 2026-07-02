@@ -1,7 +1,7 @@
 import math
 
-from datetime import datetime
-from sqlalchemy import func, select, update, and_
+from datetime import datetime, timezone
+from sqlalchemy import func, select, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -99,9 +99,8 @@ class TodoBaseRepository:
                 TodoBase.userId == user_id
         ))
         
-        result = await self.session.execute(stmt)
+        return await self.session.execute(stmt).scalar_one_or_none()
         
-        return result.scalar_one_or_none()
         
     
     async def select_by_id(self, todo_id, user_id) :
@@ -134,6 +133,7 @@ class TodoBaseRepository:
         todo_entity.status = todo_update.status
         todo_entity.description = todo_update.description
         todo_entity.deadline = todo_update.deadline
+        todo_entity.lastModified = datetime.now(timezone.utc)
         
         # 3. flush
         await self.session.flush()
@@ -149,7 +149,7 @@ class TodoBaseRepository:
             raise Exception()
             
         todo_entity.isTrash = True
-        todo_entity.trashDate = datetime.now()
+        todo_entity.trashDate = datetime.now(timezone.utc)
         
         await self.session.flush()
         await self.session.refresh(todo_entity)
@@ -166,7 +166,7 @@ class TodoBaseRepository:
             author = comment.author,
             commentText = comment.commentText,
             isTrash = comment.isTrash,
-            lastModified = datetime.now()
+            lastModified = datetime.now(timezone.utc)
         )
         
         self.session.add(comment_entity)

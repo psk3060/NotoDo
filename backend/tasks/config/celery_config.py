@@ -13,11 +13,19 @@ condition_celery.conf.worker_pool = "solo"
 
 # 스케줄러 정의
 sync_celery.conf.beat_schedule = {
-    "process-notion-sync": {
+    "sync-notodo-to-notion": {
         "task":     "tasks.sync.notion_sync_tasks.process_outbox",
         "schedule": 15.0,
         "options": {
             "queue": "sync",
         }
     },
+    "sync_from_notion_to_notodo" : {
+        "task" : "tasks.sync.notion_sync_tasks.from_notion_to_notodo",
+        "schedule" : 3000.0, # 1시간에 한 번씩
+        "options" : {
+            "queue" : "sync",
+        }
+    }
+    
 }

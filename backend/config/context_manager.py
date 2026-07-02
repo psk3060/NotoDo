@@ -20,25 +20,24 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 @asynccontextmanager
-async def lifespan(_ : FastAPI):
-    await _startup()
+async def lifespan(app : FastAPI):
+    await _startup(app)
     try :
         yield
     finally:
-        await _shutdown()
+        await _shutdown(app)
         
 
 # ─── Startup ────────────────────────────────────────────────────────────────
 
-async def _startup():
+async def _startup(app : FastAPI):
     # Mongo 
     await _init_mongo()
     await _init_postgres()
     await _init_redis()
     _init_rsa()
-    await _init_notion()
-    
-    
+    await _init_notion_mutable(app)
+
 
 async def _init_mongo():
     logger.info("MongoDB 초기화 중...")
@@ -75,25 +74,36 @@ def _init_rsa():
     logger.info("RSA Key Pair 생성 완료")
 
 
-async def _init_notion():
+async def _init_notion_mutable(app : FastAPI):
+    
     if os.getenv("TODO_ENV", "local") != "prod":
-            return
+        app.state.notion_container = None
+        app.state.notion_service = None
+        return
+    
     logger.info("Notion 연동 중...")
     
-    from core.service_container import service_container
-    service_container.notion = NotionApiServiceImpl()
-    await service_container.notion.retrieve_database()
+    notion_service = NotionApiServiceImpl()
+    container = await notion_service.retrieve_database()
     
+    if container is None:
+        logger.error("Notion 연동 실패: 데이터베이스 조회 불가")
+        app.state.notion_container = None
+        app.state.notion_service = None
+        return
+    
+    app.state.notion_container = container
+    app.state.notion_service = notion_service
     logger.info("Notion 연동 완료")
-    
+                
 
 # ─── Shutdown ────────────────────────────────────────────────────────────────
 
-async def _shutdown():
+async def _shutdown(app : FastAPI):
     await _close_mongo()
     await _close_postgres()
     await _close_redis()
-    await _close_notion()
+    await _close_notion(app)
 
 async def _close_mongo():
     try:
@@ -120,14 +130,14 @@ async def _close_redis():
     except Exception:
         logger.exception("Redis 해제 중 오류")
 
-async def _close_notion():
+async def _close_notion(app : FastAPI):
     if os.getenv("TODO_ENV", "local") != "prod":
         return
     try :
         # 서비스 컨테이너에서 연결 해제
-        from core.service_container import service_container
-        if service_container.notion:
-            await service_container.notion.close()
+        notion_service = getattr(app.state, "notion_service", None)
+        if notion_service:
+            await notion_service.close()
         
         logger.info("Notion 연결 해제")
     except Exception:

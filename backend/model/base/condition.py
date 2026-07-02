@@ -1,7 +1,5 @@
-from pydantic import BaseModel, Field
-
 from datetime import datetime
-from typing import Optional, Any, List
+from typing import Optional, Any
 
 from sqlalchemy import String, DateTime, text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -18,9 +16,3 @@ class FrequentlySearchedConditions(Base):
     registDate : Mapped[datetime] = mapped_column("regist_date", DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
     modifyDate : Mapped[Optional[datetime]] = mapped_column("modify_date", DateTime(timezone=True))
     searchCount : Mapped[int] = mapped_column('search_count')
-
-
-
-
-    
-
