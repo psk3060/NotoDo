@@ -28,6 +28,8 @@ def from_notion_to_notodo():
     logger.info(f"[Server Sync Poller] 실행 — {utc_now.astimezone(tz=timezone(timedelta(hours=9)))}")
     run_async(task_notion_to_notodo())
 
+KST = timezone(timedelta(hours=9))
+
 async def task_notion_to_notodo():
     """Notion에서 Notodo로 데이터 전송"""
     
@@ -35,6 +37,7 @@ async def task_notion_to_notodo():
     
     try :
         notion_service = NotionTaskServiceImpl()
+        await notion_service.retrieve_database()
         
         async with get_pg_session_for_tasks() as pg_session:
             
@@ -46,21 +49,34 @@ async def task_notion_to_notodo():
             # 있으면, 마지막 동기화 시각. 없으면 현재 시간 1시간 이전으로
             target_date = sync_state.lastSyncedAt if sync_state else sync_start_time - timedelta(hours=1)
             
-            # 2) TODO Notion에서 조회해오기 - Notion API 호출(target_date 이후, 수정된 데이터만 조회)
+            if target_date.tzinfo is None:
+                target_date = target_date.replace(tzinfo=timezone.utc)
             
+            filter = {
+                "timestamp" : "last_edited_time",
+                "last_edited_time" : {
+                    "after" : target_date.astimezone(KST).strftime("%Y-%m-%d %H:%M")
+                }
+            }
             
-            # 3) TODO Notodo에 반영
-            # 3-1) Notodo에만 있는 경우, 
-            # 3-2) Notion에만 있는 경우,
-            # 3-3) 둘 모두 있는 경우, 불필요한 수정 프로세스 방지를 위한 대책 세우기
+            # 2) Notion에서 조회해오기 - Notion API 호출(target_date 이후, 수정된 데이터만 조회)
+            temp_list = await notion_service.query_datasource(filter)
             
+            logger.info(f"[Server Sync Poller] Notion에서 조회된 건수: {len(temp_list)}")
+            
+            if temp_list:
+                # 3) TODO Notodo에 반영
+                # 3-1) Notodo에만 있는 경우, 
+                # 3-2) Notion에만 있는 경우,
+                # 3-3) 둘 모두 있는 경우, 불필요한 수정 프로세스 방지를 위한 대책 세우기
+                pass
             
             
             # 지연 시간 발생 대비 - 5분
             SYNC_SAFETY_MARGIN = timedelta(minutes=5)
             checkpoint = sync_start_time - SYNC_SAFETY_MARGIN
             
-            # 4) 갱신 건 최신화 - 추가 또는 수정
+            # 4) 갱신 건 최신화 - 추가 또는 수정(TODO 추가 시 에러 datetime 관련)
             await sync_service.save_sync_state(sync_state, checkpoint)
             
             

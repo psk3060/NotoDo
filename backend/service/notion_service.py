@@ -353,21 +353,27 @@ class NotionApiServiceImpl(NotionService):
 class NotionTaskServiceImpl(NotionService):
     
     async def query_datasource(self, filter: dict | None = None) :
-        """DataSource 조회(리스트 조회 - Task용)"""
-        pass
+        source = self._container.primary_data_source
         
-    
-    def retrieve_page(page_id : str) -> dict : 
-        pass
-    
-    def create_page(todo : Todo) -> dict :
-        pass
-    
-    def retrieve_reply_list( page_id : str) -> list:
-        pass
-    
-    def create_reply(comment : TodoComment) -> dict :
-        pass
+        if source is None:
+            raise RuntimeError("Notion 데이터 소스를 사용할 수 없습니다")
+        
+        url = f"https://api.notion.com/v1/data_sources/{source.get('id')}/query"
+        
+        payload = {
+            "filter": filter
+        }
+        
+        payload["is_archived"] = False
+        payload["result_type"] = "page"
+        
+        try:
+            data = await self.post(url, payload)
+            
+            return data["results"]
+        except HTTPStatusError as e:
+            return []
+        
     
     async def patch_page(self, todo_id : str, body : dict | None = None) -> dict :
         
@@ -381,4 +387,11 @@ class NotionTaskServiceImpl(NotionService):
             "isSuccess" : True,
             "message" : ""
         }
+    
+    async def retrieve_page(page_id : str) -> dict : ...
+    async def create_page(todo : Todo) -> dict : ...
+    
+    async def retrieve_reply_list( page_id : str) -> list: ...
+    async def create_reply(comment : TodoComment) -> dict : ...
+    
     

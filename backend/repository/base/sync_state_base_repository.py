@@ -13,7 +13,10 @@ class SyncStateBaseRepository:
     async def select_sync_state_one(self) -> Optional[SyncState]:
         """Sync 상태를 조회"""
         stmt = select(SyncState).where(SyncState.syncKey == "notion_sync")
-        return await self.db_session.execute(stmt).scalars().one_or_none()
+        result = await self.db_session.execute(stmt)
+        return result.scalars().one_or_none()
+
+
 
     async def insert_sync_state(self, sync_state : SyncState) -> None:
         """Sync를 저장"""

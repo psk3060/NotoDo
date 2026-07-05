@@ -13,7 +13,7 @@ class SyncState(Base):
 
     stateId : Mapped[int] = mapped_column('state_id', BigInteger, primary_key=True, autoincrement=True)
     syncKey: Mapped[str] = mapped_column('sync_key', String(100), nullable=False, unique=True)
-    lastSyncedAt: Mapped[Optional[datetime]] = mapped_column('last_synced_at', nullable=True)
+    lastSyncedAt: Mapped[Optional[datetime]] = mapped_column('last_synced_at', DateTime(timezone=True), nullable=True)
     lastStatus: Mapped[Optional[str]] = mapped_column('last_status', String(20), nullable=True)
     registAt: Mapped[datetime] = mapped_column('regist_at', DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"), nullable=False)
     
