@@ -21,8 +21,6 @@ from model import OutboxDTO
 from repository import TodoBaseRepository
 from model import TodoListRequest, TodoListResponse
 
-from core.notion_container import notion_container
-
 from datetime import timezone, timedelta
 
 load_dotenv()
@@ -31,38 +29,28 @@ logger = logging.getLogger(__name__)
 
 class TodoService(ABC):
     @abstractmethod
-    def read_todos(listRequest : TodoListRequest) -> TodoListResponse:
-        pass
-    
+    async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:...
     @abstractmethod
-    def read_todo_detail(todo_id: str, user_id : str = None):
-        pass
-        
+    async def read_todo_detail(self, todo_id: str, user_id : str = None):...
     @abstractmethod
-    def create_todo(todo : Todo, access_token : str = None):
-        pass
-
+    async def create_todo(self, todo : Todo, access_token : str = None):...
     @abstractmethod
-    def delete_todo(todo_id : str, user_id : str = None, access_token : str = None) :
-        pass
-    
+    async def delete_todo(self, todo_id : str, user_id : str = None, access_token : str = None) : ...
     @abstractmethod
-    def update_todo(todo_id : str, todo_update: Todo, access_token : str = None) :
-        pass
-    
+    async def update_todo(self, todo_id : str, todo_update: Todo, access_token : str = None) : ...
     @abstractmethod
-    def create_comment(comment : TodoComment, access_token : str = None) :
-        pass
+    async def create_comment(self, comment : TodoComment, access_token : str = None) : ...
     
 
 class LocalTodoServiceImpl(TodoService):
+    """Local 환경에서 테스트용으로 사용되는 TodoService 구현체(Notion 연결 X. DB 연결 X)"""
     def __init__(self):
         self.todo_list = []
         self.todo_list.append(Todo(id = str(uuid.uuid4()), title = "Sample Todo", status = "Pending", registDate = "2025-02-06 17:30", deadline = "2025-02-10", description = "This is a sample", userId = "demo"))
         self.todo_list.append(Todo(id = str(uuid.uuid4()), title = "Another Todo", status = "Pending", registDate = "2025-02-06 18:00", deadline = "2025-02-14", description = "This is another sample", userId = "demo"))
         self.todo_list.append(Todo(id = str(uuid.uuid4()), title = "Yet Another Todo", status = "Pending", registDate = "2025-02-06 21:35", deadline = "2025-02-10", description = "This is yet another sample", userId = "demo"))
         
-    def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
+    async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         todos = [x for x in self.todo_list if x.userId == listRequest.userId]
         total = len(todos)
         
@@ -77,17 +65,17 @@ class LocalTodoServiceImpl(TodoService):
         
         return result
     
-    def read_todo_detail(self, todo_id: int, user_id : str) -> Todo: 
+    async def read_todo_detail(self, todo_id: int, user_id : str) -> Todo: 
         return [x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0]
     
-    def create_todo(self, todo : Todo):
+    async def create_todo(self, todo : Todo):
         todo.todoId = str(uuid.uuid4())
         self.todo_list.append(todo)    
         
-    def delete_todo(self, todo_id :str, user_id : str) :
+    async def delete_todo(self, todo_id :str, user_id : str) :
         self.todo_list.remove([x for x in self.todo_list if x.id == todo_id and x.userId == user_id][0])
 
-    def update_todo(self, todo_id : str, todo_update: Todo) :
+    async def update_todo(self, todo_id : str, todo_update: Todo) :
         
         for index, todo in enumerate(self.todo_list):
             
@@ -109,13 +97,14 @@ class LocalTodoServiceImpl(TodoService):
 
                 self.todo_list[index] = Todo(**updated_data)
     
-    def create_comment(self, comment : TodoComment) :
+    async def create_comment(self, comment : TodoComment) :
         '''답글 등록 TODO'''
         pass
 
 
 
 class NotionTodoServiceImpl(TodoService):
+    """Notion과 연동이 되는 구현체(컨테이너 필요)"""
     
     def __init__(self, notion_service: NotionService):
         self.notion_service = notion_service
@@ -123,9 +112,6 @@ class NotionTodoServiceImpl(TodoService):
     async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:
         todos = []
 
-        if len(notion_container.data_sources) > 0:
-            source = notion_container.data_sources[0]
-        
         filter = {}
         
         if listRequest :
@@ -136,7 +122,7 @@ class NotionTodoServiceImpl(TodoService):
             if listRequest.status and listRequest.status != '':
                 filter['상태'] = listRequest.status
         
-        result = await self.notion_service.query_datasource(source["id"], filter)
+        result = await self.notion_service.query_datasource(filter)
         
         pages = result['pages']
         
@@ -216,6 +202,7 @@ class NotionTodoServiceImpl(TodoService):
 
 
 class DbTodoServiceImpl(TodoService):
+    """DB와 연동되는 구현체(Notion 연결 X)"""
     
     def __init__(self, todo_repository : TodoBaseRepository):
         self.todo_repository = todo_repository
@@ -277,6 +264,8 @@ class DbTodoServiceImpl(TodoService):
 
 
 class HybridTodoServiceImpl(TodoService) :
+    
+    """DB와 Notion 모두 연동하는 구현체(컨테이너 필요)"""
     def __init__(self, notion_service: NotionService, todo_repository : TodoBaseRepository, outbox_service : OutboxRegistServiceImpl, condition_service : SearchConditionService):
         self.notion_service = notion_service
         self.todo_repository = todo_repository
@@ -536,3 +525,27 @@ class HybridTodoServiceImpl(TodoService) :
             # TODO 실패 시 outbox 처리
             
             
+            
+class TaskTodoServiceImpl(TodoService):
+    """Task에서 사용하는 TodoService - Update만 필요"""
+    
+    def __init__(self, repository : TodoBaseRepository):
+        self.repository = repository
+    
+    async def update_todo(self, todo_id : str, todo_update: Todo, access_token : str = None) : 
+        
+        try :
+            await self.repository.update(todo_id, todo_update)
+            await self.repository.commit()
+        except Exception as ex:
+            logger.error(f"[Task Update Todo] 예외 발생 - {ex}")
+            await self.repository.rollback()
+        
+    
+    async def read_todos(self, listRequest : TodoListRequest) -> TodoListResponse:...
+    async def read_todo_detail(self, todo_id: str, user_id : str = None):...
+    async def create_todo(self, todo : Todo, access_token : str = None):...
+    async def delete_todo(self, todo_id : str, user_id : str = None, access_token : str = None) : ...
+    async def create_comment(self, comment : TodoComment, access_token : str = None) : ...
+    
+    

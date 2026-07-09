@@ -1,33 +1,121 @@
 import logging
 
 from datetime import datetime, timezone, timedelta
-
 from db.mongo.celery_config import init_mongo_for_task, close_mongo_for_task
-
 from tasks.config.celery_config import sync_celery
-
 from service.notion_service import NotionTaskServiceImpl
 from tasks.util.task_run_util import run_async
-
 from model import OutboxDocument
-
 from beanie.operators import In
 
+from db.postgres.celery_config import get_pg_session_for_tasks
+from utils import notion_utils as notion
+
+from model import Todo
+from service import SyncStateService, OutboxListServiceImpl, TaskTodoServiceImpl
+from repository import SyncStateBaseRepository, OutboxDocumentRepository, TodoBaseRepository
+
 logger = logging.getLogger(__name__)
-
-
 
 @sync_celery.task(queue = "sync")
 def from_notion_to_notodo():
     """Notion에서 Notodo에 최신 데이터 반영하기 위한 Task
         구현 
-            1) 가장 마지막에 수행된 날짜 및 반영 건 보관
-            2) 1)에서의 날짜보다 Notion의 수정일자가 더 큰 경우에만 Notion에서 조회해오기
-            3) 주기는 30분에 한 번씩
-            4) Notion 데이터를 Notodo에 강제로 덮어쓰기
+            1) 가장 마지막에 동기화 시도한 일시 저장 
+            2) 1)에서의 날짜보다 Notion의 수정일자가 더 이후인 경우에만 Notion에서 조회해오기
+            3) 주기는 1시간에 한 번씩
     """
+    utc_now = datetime.now(timezone.utc)
+    logger.info(f"[Server Sync Poller] 실행 — {utc_now.astimezone(tz=timezone(timedelta(hours=9)))}")
+    run_async(task_notion_to_notodo())
+
+KST = timezone(timedelta(hours=9))
+
+async def task_notion_to_notodo():
+    """Notion에서 Notodo로 데이터 전송"""
     
-    pass
+    sync_start_time = datetime.now(timezone.utc)  # 이번 실행 시작 시각 = 다음 체크포인트 후보
+    
+    mongo_client = await init_mongo_for_task()
+    
+    try :
+        notion_service = NotionTaskServiceImpl()
+        await notion_service.retrieve_database()
+        
+        outbox_service = OutboxListServiceImpl(OutboxDocumentRepository())
+        
+        async with get_pg_session_for_tasks() as pg_session:
+            todo_service = TaskTodoServiceImpl(TodoBaseRepository(pg_session))
+            sync_service = SyncStateService(SyncStateBaseRepository(pg_session))
+            
+            # 1) 가장 마지막에 수행된 날짜 조회(DB에서 - 데이터는 딱 하나만 존재, 없으면 None)
+            sync_state = await sync_service.get_sync_state()
+            
+            # 있으면, 마지막 동기화 시각. 없으면 현재 시간 1시간 이전으로
+            target_date = sync_state.lastSyncedAt if sync_state else sync_start_time - timedelta(hours=1)
+            
+            if target_date.tzinfo is None:
+                target_date = target_date.replace(tzinfo=timezone.utc)
+                
+            filter = {
+                "timestamp" : "last_edited_time",
+                "last_edited_time" : {
+                    "after" : target_date.strftime("%Y-%m-%d %H:%M")
+                }
+            }
+
+            logger.info(filter)
+            
+            # 2) Notion에서 조회해오기 - Notion API 호출(target_date 이후, 수정된 데이터만 조회)
+            target_list = await notion_service.query_datasource(filter) or []
+            
+            logger.info(target_list)
+            
+            if target_list:
+                # 2) Outbox 리스트 검색 : select distinct parent_id from outbox where event_caller == todo, process == False
+                outbox_list = await outbox_service.selectDistinctPidList()
+
+                if outbox_list:
+                    # outbox_list에 포함된 page_id를 target_list에서 제거
+                    outbox_pid_set = set(outbox_list)
+                    target_list = [
+                        item for item in target_list
+                        if item["todoId"] not in outbox_pid_set
+                    ]        
+                    
+            process_list = target_list.copy()
+            
+            if process_list:
+                for item in process_list:
+                    await todo_service.update_todo(
+                        item["todoId"],
+                        Todo (
+                            todoId = item["todoId"],
+                            priority = notion.from_notion_priority_id(item["priority"]),
+                            status = notion.from_notion_status_id(item["status"]),
+                            deadline = item["deadline"],
+                            title = item["title"],
+                            description = item["description"]
+                        )
+                    )
+            
+            
+            # 지연 시간 발생 대비 - 5분
+            SYNC_SAFETY_MARGIN = timedelta(minutes=5)
+            checkpoint = sync_start_time - SYNC_SAFETY_MARGIN
+            
+            # 4) 갱신 건 최신화 - 추가 또는 수정(TODO 추가 시 에러 datetime 관련)
+            await sync_service.save_sync_state(sync_state, checkpoint)
+            
+            
+            
+    except Exception as e:
+        logger.error(f"[Server Sync Poller] 에러 발생 - {e}")
+    
+    finally : 
+        await close_mongo_for_task(mongo_client)
+    
+
 
 
 @sync_celery.task(queue="sync")
@@ -49,8 +137,9 @@ async def find_target():
         ).to_list()
         logger.info(f"[Outbox Poller] 미처리 건수: {len(events)}")
         
-        for event in events:
-            sync_to_notion.delay(str(event.id))
+        if events:
+            for event in events:
+                sync_to_notion.delay(str(event.id))
         
     finally:
         await close_mongo_for_task(mongo_client)

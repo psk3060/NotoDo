@@ -1,7 +1,7 @@
-import math
+import math, logging
 
-from datetime import datetime
-from sqlalchemy import func, select, update, and_
+from datetime import datetime, timezone
+from sqlalchemy import func, select, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,8 @@ from utils import notion_utils as notion
 from model import Todo, TodoComment
 from model import TodoBase, TodoCommentBase
 from model import TodoListRequest, TodoListResponse
+
+logger = logging.getLogger(__name__)
 
 class TodoBaseRepository:
     def __init__(self, session : AsyncSession):
@@ -100,9 +102,16 @@ class TodoBaseRepository:
         ))
         
         result = await self.session.execute(stmt)
-        
         return result.scalar_one_or_none()
         
+    async def select_one(self, todo_id) : 
+        """User ID 없는 용도 - Task 호출"""
+        stmt = select(TodoBase).where(TodoBase.todoId == todo_id)
+        
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    
     
     async def select_by_id(self, todo_id, user_id) :
         
@@ -122,9 +131,16 @@ class TodoBaseRepository:
         
         return response
     
+    
+    
+    
+    
     async def update(self, todo_id : str, todo_update: Todo):
         
-        todo_entity = await self.select_object_by_id(todo_id, todo_update.userId)
+        todo_entity = await self.select_one(todo_id)
+        
+        if todo_update.userId :
+            todo_entity = await self.select_object_by_id(todo_id, todo_update.userId)
         
         if todo_entity is None:
             raise Exception()
@@ -134,6 +150,7 @@ class TodoBaseRepository:
         todo_entity.status = todo_update.status
         todo_entity.description = todo_update.description
         todo_entity.deadline = todo_update.deadline
+        todo_entity.lastModified = datetime.now(timezone.utc)
         
         # 3. flush
         await self.session.flush()
@@ -149,7 +166,7 @@ class TodoBaseRepository:
             raise Exception()
             
         todo_entity.isTrash = True
-        todo_entity.trashDate = datetime.now()
+        todo_entity.trashDate = datetime.now(timezone.utc)
         
         await self.session.flush()
         await self.session.refresh(todo_entity)
@@ -166,7 +183,7 @@ class TodoBaseRepository:
             author = comment.author,
             commentText = comment.commentText,
             isTrash = comment.isTrash,
-            lastModified = datetime.now()
+            lastModified = datetime.now(timezone.utc)
         )
         
         self.session.add(comment_entity)

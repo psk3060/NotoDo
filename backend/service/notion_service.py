@@ -6,10 +6,12 @@ from utils import notion_utils as notion
 
 from model import Todo, TodoComment
 
+from fastapi import Request
+
 import os, httpx
 from dotenv import load_dotenv
 
-from core.notion_container import NotionContainer, notion_container
+from core.notion_container import NotionContainer
 
 from httpx import HTTPStatusError
 
@@ -30,17 +32,14 @@ def get_notion_headers() -> dict:
         "Content-Type": "application/json"
     }
 
-def get_notion_service() :
-    '''확장이 가능하기 때문에 메소드로 작성'''
-    return NotionApiServiceImpl()
-    
-    
+
 
 class NotionService(ABC):
     
     def __init__(self):
         self.headers = get_notion_headers()
         self.client = httpx.AsyncClient(headers=self.headers)
+        self._container: NotionContainer | None = None   # 추가
     
     async def get(self, url: str):
         res = await self.client.get(url, headers=self.headers)
@@ -60,76 +59,57 @@ class NotionService(ABC):
     async def close(self):
         await self.client.aclose()
     
-    @abstractmethod
-    def retrieve_database() -> NotionContainer:
-        pass
     
-    @abstractmethod
-    def query_datasource(data_source_id : str, filter: dict | None = None) -> dict :
-        pass
+    async def retrieve_database(self) -> NotionContainer | None:   
+        url = f"https://api.notion.com/v1/databases/{os.getenv('NOTION_DATABASE_ID')}"
+        
+        try : 
+            database = await self.get(url)
+            data_sources = database.get("data_sources", [])
+            self._container = NotionContainer(database=database, data_sources=data_sources)
+            return self._container
+        except HTTPStatusError as e:
+            logger.error(f"[NotionService] retrieve_database - {e}")
+            self._container = None
+            return None
     
+    def get_data_source(self) -> dict:
+        if not self._container or not self._container.data_sources:
+            return HTTPStatusError("Notion 데이터 소스를 사용할 수 없습니다", request=None, response=None)
+        
+        return self._container.primary_data_source
+
     @abstractmethod
-    def retrieve_page(page_id : str) -> dict : 
-        pass
-    
+    async def query_datasource(self, filter: dict | None = None) -> dict : ...
     @abstractmethod
-    def create_page(todo : Todo) -> dict :
-        pass
-    
+    async def retrieve_page(self, page_id : str) -> dict : ...
     @abstractmethod
-    def patch_page(todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict :
-        pass
-    
+    async def create_page(self, todo : Todo) -> dict : ...
     @abstractmethod
-    def retrieve_reply_list( page_id : str) -> list:
-        pass
-    
+    async def patch_page(self, todo_id : str, todo : Todo | dict | None = None, is_trash : bool | None = False) -> dict : ...
     @abstractmethod
-    def create_reply(comment : TodoComment) -> dict :
-        pass
+    async def retrieve_reply_list(self, page_id : str) -> list : ...
+    @abstractmethod
+    async def create_reply(self, comment : TodoComment) -> dict : ...
+
+
+def get_notion_service(request: Request) -> NotionService | None :
+    '''확장이 가능하기 때문에 메소드로 작성.
+    startup 시 retrieve_database()로 채워진 인스턴스를 그대로 반환.'''
+    return getattr(request.app.state, "notion_service", None)
 
 
 class NotionApiServiceImpl(NotionService):
-    def __init__(self):
-        self.headers = get_notion_headers()
-        self.client = httpx.AsyncClient(headers=self.headers)
     
-    async def get(self, url: str):
+    async def query_datasource(self, filter: dict | None = None) :
+        """DataSource 조회(리스트 조회)"""
         
-        res = await self.client.get(url, headers=self.headers)
-        res.raise_for_status()
-        return res.json()
-    
-    async def post(self, url: str, json: dict):
-        res = await self.client.post(url, headers=self.headers, json=json)
-        res.raise_for_status()
-        return res.json()
-
-    async def patch(self, url : str, json:dict):
-        res = await self.client.patch(url, headers=self.headers, json=json)
-        res.raise_for_status()
-        return res.json()
-    
-    async def close(self):
-        await self.client.aclose()
-    
-    async def retrieve_database(self) -> NotionContainer:
+        source = self._container.primary_data_source
         
-        url = f"https://api.notion.com/v1/databases/{os.getenv('NOTION_DATABASE_ID')}"
+        if source is None:
+            raise RuntimeError("Notion 데이터 소스를 사용할 수 없습니다")
         
-        try:
-            notion_container.database = await self.get(url)
-            
-            notion_container.data_sources = notion_container.database.get("data_sources", [])
-            
-            return notion_container
-            
-        except HTTPStatusError as e:
-            return None
-        
-
-    async def query_datasource(self, data_source_id : str, filter: dict | None = None) :
-        url = f"https://api.notion.com/v1/data_sources/{data_source_id}/query"
+        url = f"https://api.notion.com/v1/data_sources/{source.get('id')}/query"
         
         payload = {
             "sorts": [
@@ -227,6 +207,11 @@ class NotionApiServiceImpl(NotionService):
         
         url = "https://api.notion.com/v1/pages"
 
+        source = self._container.primary_data_source
+        
+        if source is None:
+            raise RuntimeError("Notion 데이터 소스를 사용할 수 없습니다")
+        
         properties = {
             "상태": {"status": {"id": notion.to_notion_status_id(todo.status)}},
             "작업명": {"title": [{"text": {"content": todo.title}}]},
@@ -245,7 +230,7 @@ class NotionApiServiceImpl(NotionService):
 
         # TODO DataSource 선택 가능하도록 확장
         payload = {
-            "parent": {"data_source_id": notion_container.data_sources[0]["id"]},
+            "parent": {"data_source_id": source.get("id")},
             "properties": properties
         }
         
@@ -367,27 +352,40 @@ class NotionApiServiceImpl(NotionService):
 
 class NotionTaskServiceImpl(NotionService):
     
-    def __init__(self):
-        self.headers = get_notion_headers()
-        self.client = httpx.AsyncClient(headers=self.headers)
-    
-    def retrieve_database() -> NotionContainer:
-        pass
-    
-    def query_datasource(data_source_id : str, filter: dict | None = None) -> dict :
-        pass
-    
-    def retrieve_page(page_id : str) -> dict : 
-        pass
-    
-    def create_page(todo : Todo) -> dict :
-        pass
-    
-    def retrieve_reply_list( page_id : str) -> list:
-        pass
-    
-    def create_reply(comment : TodoComment) -> dict :
-        pass
+    async def query_datasource(self, filter: dict | None = None) :
+        source = self._container.primary_data_source
+        
+        if source is None:
+            raise RuntimeError("Notion 데이터 소스를 사용할 수 없습니다")
+        
+        url = f"https://api.notion.com/v1/data_sources/{source.get('id')}/query"
+        
+        payload = {
+            "filter": filter
+        }
+        
+        payload["is_archived"] = False
+        payload["result_type"] = "page"
+        
+        try:
+            data = await self.post(url, payload)
+            
+            # data[results]에서 page_id, 마감일, 상태, 설명, 담당자, 우선순위, 작업명
+            pages = [
+                {
+                    "todoId": page["id"],
+                    "title" : notion.get_text(page["properties"], "작업명"),
+                    "status" : notion.get_status(page["properties"], "상태"),
+                    "deadline" : notion.get_date(page["properties"], '마감일'),
+                    "description" : notion.get_rich_text(page["properties"], "설명"),
+                    "priority" : notion.get_select(page["properties"], "우선순위")
+                }
+                for page in data["results"]
+            ]
+            return pages
+        except HTTPStatusError as e:
+            return []
+        
     
     async def patch_page(self, todo_id : str, body : dict | None = None) -> dict :
         
@@ -401,4 +399,11 @@ class NotionTaskServiceImpl(NotionService):
             "isSuccess" : True,
             "message" : ""
         }
+    
+    async def retrieve_page(page_id : str) -> dict : ...
+    async def create_page(todo : Todo) -> dict : ...
+    
+    async def retrieve_reply_list( page_id : str) -> list: ...
+    async def create_reply(comment : TodoComment) -> dict : ...
+    
     

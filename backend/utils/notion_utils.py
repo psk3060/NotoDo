@@ -2,10 +2,19 @@ from datetime import datetime, timezone, timedelta
 
 def get_text(props, key):
     try:
-        items = props[key].get("title") or props[key].get("rich_text")
+        items = props[key].get("title")
         if not items:
             return ""
         return items[0].get("plain_text", "")
+    except:
+        return ""
+
+def get_rich_text(props, key):
+    try:
+        items = props[key]["rich_text"]
+        if not items:
+            return ""
+        return items[0]["text"]["content"]
     except:
         return ""
 
