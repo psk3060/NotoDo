@@ -9,10 +9,11 @@ from model import OutboxDocument
 from beanie.operators import In
 
 from db.postgres.celery_config import get_pg_session_for_tasks
+from utils import notion_utils as notion
 
-from model import SyncState
-from service import SyncStateService
-from repository import SyncStateBaseRepository
+from model import Todo
+from service import SyncStateService, OutboxListServiceImpl, TaskTodoServiceImpl
+from repository import SyncStateBaseRepository, OutboxDocumentRepository, TodoBaseRepository
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +36,16 @@ async def task_notion_to_notodo():
     
     sync_start_time = datetime.now(timezone.utc)  # 이번 실행 시작 시각 = 다음 체크포인트 후보
     
+    mongo_client = await init_mongo_for_task()
+    
     try :
         notion_service = NotionTaskServiceImpl()
         await notion_service.retrieve_database()
         
+        outbox_service = OutboxListServiceImpl(OutboxDocumentRepository())
+        
         async with get_pg_session_for_tasks() as pg_session:
-            
+            todo_service = TaskTodoServiceImpl(TodoBaseRepository(pg_session))
             sync_service = SyncStateService(SyncStateBaseRepository(pg_session))
             
             # 1) 가장 마지막에 수행된 날짜 조회(DB에서 - 데이터는 딱 하나만 존재, 없으면 None)
@@ -51,25 +56,48 @@ async def task_notion_to_notodo():
             
             if target_date.tzinfo is None:
                 target_date = target_date.replace(tzinfo=timezone.utc)
-            
+                
             filter = {
                 "timestamp" : "last_edited_time",
                 "last_edited_time" : {
-                    "after" : target_date.astimezone(KST).strftime("%Y-%m-%d %H:%M")
+                    "after" : target_date.strftime("%Y-%m-%d %H:%M")
                 }
             }
+
+            logger.info(filter)
             
             # 2) Notion에서 조회해오기 - Notion API 호출(target_date 이후, 수정된 데이터만 조회)
-            temp_list = await notion_service.query_datasource(filter)
+            target_list = await notion_service.query_datasource(filter) or []
             
-            logger.info(f"[Server Sync Poller] Notion에서 조회된 건수: {len(temp_list)}")
+            logger.info(target_list)
             
-            if temp_list:
-                # 3) TODO Notodo에 반영
-                # 3-1) Notodo에만 있는 경우, 
-                # 3-2) Notion에만 있는 경우,
-                # 3-3) 둘 모두 있는 경우, 불필요한 수정 프로세스 방지를 위한 대책 세우기
-                pass
+            if target_list:
+                # 2) Outbox 리스트 검색 : select distinct parent_id from outbox where event_caller == todo, process == False
+                outbox_list = await outbox_service.selectDistinctPidList()
+
+                if outbox_list:
+                    # outbox_list에 포함된 page_id를 target_list에서 제거
+                    outbox_pid_set = set(outbox_list)
+                    target_list = [
+                        item for item in target_list
+                        if item["todoId"] not in outbox_pid_set
+                    ]        
+                    
+            process_list = target_list.copy()
+            
+            if process_list:
+                for item in process_list:
+                    await todo_service.update_todo(
+                        item["todoId"],
+                        Todo (
+                            todoId = item["todoId"],
+                            priority = notion.from_notion_priority_id(item["priority"]),
+                            status = notion.from_notion_status_id(item["status"]),
+                            deadline = item["deadline"],
+                            title = item["title"],
+                            description = item["description"]
+                        )
+                    )
             
             
             # 지연 시간 발생 대비 - 5분
@@ -84,7 +112,8 @@ async def task_notion_to_notodo():
     except Exception as e:
         logger.error(f"[Server Sync Poller] 에러 발생 - {e}")
     
-    
+    finally : 
+        await close_mongo_for_task(mongo_client)
     
 
 

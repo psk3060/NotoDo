@@ -1,4 +1,4 @@
-import math
+import math, logging
 
 from datetime import datetime, timezone
 from sqlalchemy import func, select, and_
@@ -10,6 +10,8 @@ from utils import notion_utils as notion
 from model import Todo, TodoComment
 from model import TodoBase, TodoCommentBase
 from model import TodoListRequest, TodoListResponse
+
+logger = logging.getLogger(__name__)
 
 class TodoBaseRepository:
     def __init__(self, session : AsyncSession):
@@ -99,9 +101,17 @@ class TodoBaseRepository:
                 TodoBase.userId == user_id
         ))
         
-        return await self.session.execute(stmt).scalar_one_or_none()
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
         
+    async def select_one(self, todo_id) : 
+        """User ID 없는 용도 - Task 호출"""
+        stmt = select(TodoBase).where(TodoBase.todoId == todo_id)
         
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+    
+    
     
     async def select_by_id(self, todo_id, user_id) :
         
@@ -121,9 +131,16 @@ class TodoBaseRepository:
         
         return response
     
+    
+    
+    
+    
     async def update(self, todo_id : str, todo_update: Todo):
         
-        todo_entity = await self.select_object_by_id(todo_id, todo_update.userId)
+        todo_entity = await self.select_one(todo_id)
+        
+        if todo_update.userId :
+            todo_entity = await self.select_object_by_id(todo_id, todo_update.userId)
         
         if todo_entity is None:
             raise Exception()

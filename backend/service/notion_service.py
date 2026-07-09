@@ -370,7 +370,19 @@ class NotionTaskServiceImpl(NotionService):
         try:
             data = await self.post(url, payload)
             
-            return data["results"]
+            # data[results]에서 page_id, 마감일, 상태, 설명, 담당자, 우선순위, 작업명
+            pages = [
+                {
+                    "todoId": page["id"],
+                    "title" : notion.get_text(page["properties"], "작업명"),
+                    "status" : notion.get_status(page["properties"], "상태"),
+                    "deadline" : notion.get_date(page["properties"], '마감일'),
+                    "description" : notion.get_rich_text(page["properties"], "설명"),
+                    "priority" : notion.get_select(page["properties"], "우선순위")
+                }
+                for page in data["results"]
+            ]
+            return pages
         except HTTPStatusError as e:
             return []
         
