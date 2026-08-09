@@ -13,9 +13,11 @@ from model import TodoListRequest, TodoListResponse
 
 logger = logging.getLogger(__name__)
 
-class TodoBaseRepository:
+from repository.base.base_repository import BaseRepository
+
+class TodoBaseRepository(BaseRepository):
     def __init__(self, session : AsyncSession):
-        self.session = session
+        super().__init__(session)
     
     def set_query_conditions(self, listRequest : TodoListRequest) :
         conditions = [
@@ -244,15 +246,4 @@ class TodoBaseRepository:
         }
         
         return payload
-    
-    
-    
-    
-    async def commit(self) -> None:
-        await self.session.commit()
-
-    async def rollback(self) -> None:
-        await self.session.rollback()
-    
-    
     

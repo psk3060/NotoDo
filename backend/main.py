@@ -6,7 +6,7 @@ from routes.auth import router as auth_router
 from routes.conditions import router as conditions_router
 
 from config.context_manager import lifespan
-from middleware import JWTMiddleware
+from middleware import AuthorizationMiddleware
 
 import logging
 
@@ -19,7 +19,7 @@ origins = [
     "http://localhost:5173"
 ]
 
-app.add_middleware(JWTMiddleware)
+app.add_middleware(AuthorizationMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,          # List of allowed origins

@@ -1,12 +1,14 @@
 import os, jwt, uuid, logging
 
+from typing import Any
+
 from abc import ABC, abstractmethod
 from fastapi import HTTPException, Response, Request
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
 from model import RefreshTokenLogDTO
-from repository import TokenDocumentRepository
+from repository import TokenDocumentRepository, TokenBaseRepository
 
 from core.redis_container import redis_container
 
@@ -19,36 +21,37 @@ logger = logging.getLogger(__name__)
 def get_token_service(token_type : str | None = 'jwt'):
     # token_type 환경변수로
     if token_type == 'jwt':
-        return JwtTokenServiceImpl(TokenDocumentRepository())
+        return JwtTokenServiceImpl(token_document_repository=TokenDocumentRepository(), token_base_repository=TokenBaseRepository())
     
 
 class TokenService(ABC):
+    
+    def __init__(self, token_document_repository: TokenDocumentRepository, token_base_repository : TokenBaseRepository):
+        self.token_document_repository = token_document_repository
+        self.token_base_repository = token_base_repository
+
+    # Token 저장 - 로그인 
     @abstractmethod
-    def saveToken(self, user_id : str, issued_type : str, request : Request, response : Response) :
-        pass
+    def saveToken(self, user_id : str, issued_type : str, request : Request, response : Response) : ...
+    
+    # 해당 회원의 모든 refresh token 폐기 - 로그인 시 
+    @abstractmethod
+    def revoke_user_refresh_tokens(self, user_id: str): ...
+    
+    # 해당 refresh token 폐기
+    @abstractmethod
+    def revoke_refresh_token(self, refresh_token : str): ...
+    
+    # refresh token 재발급
+    @abstractmethod
+    async def reissue_refresh_token(self, refresh_token : str, request : Request, response : Response) : ...
     
     @abstractmethod
-    def revoke_user_refresh_tokens(self, user_id: str):
-        pass
-    
-    @abstractmethod
-    def revoke_refresh_token(self, refresh_token : str):
-        pass
-    
-    @abstractmethod
-    def reissue_refresh_token(self, refresh_token : str, request : Request, response : Response) :
-        pass
-    
-    
-class JwtTokenServiceImpl(TokenService):
-    
-    def __init__(self, refresh_token_log_repo: TokenDocumentRepository | None = None):
-        
-        if refresh_token_log_repo:
-            self.refresh_token_log_repo = refresh_token_log_repo
+    async def regist_black(self, access_token : str, refresh_token : str, event_type : str = "logout"): ...
     
     def saveCookie(self, token_type : str, token : str, response : Response) : 
-        '''쿠키에 저장 - JWT일 경우'''
+        """쿠키에 저장
+        - JWT 일 경우에만 전재"""
         key = f"{token_type.lower()}_token"
         
         max_age = 60 * 15
@@ -71,8 +74,30 @@ class JwtTokenServiceImpl(TokenService):
         )
     
     
+class JwtTokenServiceImpl(TokenService):
+    """JWT 기반 토큰 서비스
+    """
+    
+    
+    def jwt_payload_decode(self, token : str, secret_key : str) -> dict[str, Any]: 
+        """jwt 기반 payload로 decode"""
+        token_algorithm = os.getenv('TOKEN_ALGORITHM', '') 
+
+        try :
+            if not secret_key or secret_key == "":
+                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
+            
+            if not token_algorithm or token_algorithm == "":
+                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
+            
+            return jwt.decode(token, secret_key, algorithms=[token_algorithm])
+            
+        except Exception as e:
+            raise e
+        
+    
     def encodeToken(self, user_id : str, token_type : str, secret_key : str) -> str:
-        '''Token(Access, Refresh) 생성'''
+        '''Token(Access, Refresh) 인코딩'''
         
         try:
             
@@ -120,18 +145,18 @@ class JwtTokenServiceImpl(TokenService):
         
     
     def generateTokenPair(self, user_id : str) -> dict[str] :
-        
+        """토큰 생성"""
         result = {}
         
         try :
             # 1. Refresh Token 생성
             refresh_token = self.encodeToken(user_id, 'refresh', os.getenv('REFRESH_TOKEN_SECRET_KEY', ''))
             
-            if not refresh_token or refresh_token == "":
-                raise Exception("refresh_token이 생성되지 않았습니다.")
-            
             # 2. Access Token 생성
             access_token = self.encodeToken(user_id, 'access', os.getenv('ACCESS_TOKEN_SECRET_KEY', ''))
+            
+            if not refresh_token or refresh_token == "":
+                raise Exception("refresh_token이 생성되지 않았습니다.")
             
             if not access_token or access_token == "":
                 raise Exception("access_token이 생성되지 않았습니다.")
@@ -151,6 +176,36 @@ class JwtTokenServiceImpl(TokenService):
             )
         
         return result
+    
+    async def regist_black(self, access_token : str, refresh_token : str, event_type : str = "logout"):
+        """ 해당 토큰을 black 리스트에 등록
+        token jti (expire_at - 현재시각)만큼 ttl 설정하여 블랙리스트에 등록
+        celery worker 등록하여 처리 할지 검토"""
+        # payload 얻기(토큰 유형, 만료 시간, 회원ID, jti 등이 보관)
+        
+        access_token_payload = self.jwt_payload_decode(access_token, os.getenv('ACCESS_TOKEN_SECRET_KEY'))
+        refresh_token_payload = self.jwt_payload_decode(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY'))
+        
+        access_user_id = access_token_payload['user_id']
+        refresh_user_id = refresh_token_payload['user_id']
+        
+        if access_user_id != refresh_user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Token의 사용자 ID가 올바르지 않습니다."
+            )
+
+        # TODO : 블랙리스트 등록 로직 구현 및 파라미터 정리(DB에 등록)
+        await self.token_base_repository.insertBlock(access_user_id, access_token_payload['jti'], refresh_token_payload['jti'], refresh_token_payload['exp'], event_type)
+        
+        # TODO : Redis에 access_token 블랙리스트 등록(만료시간 기준으로 TTL 설정)
+        
+        
+        
+        await self.token_base_repository.commit()
+        
+        
+        
         
         
     async def saveToken(self, user_id : str, issued_type : str, request : Request, response : Response) -> dict[str] :
@@ -171,11 +226,13 @@ class JwtTokenServiceImpl(TokenService):
         
         refresh_token = token_pair["refresh_token"]
         access_token = token_pair["access_token"]
+        
+        
         # payload 조회
-        refresh_payload = jwt.decode(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY'), algorithms=[os.getenv('TOKEN_ALGORITHM')])
+        refresh_payload = self.jwt_payload_decode(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY'))
+        access_payload = self.jwt_payload_decode(access_token, os.getenv('ACCESS_TOKEN_SECRET_KEY'))
         
-        access_payload = jwt.decode(access_token, os.getenv('ACCESS_TOKEN_SECRET_KEY'), algorithms=[os.getenv('TOKEN_ALGORITHM')])
-        
+        # refresh token의 user_id
         payload_user_id = refresh_payload['user_id']
         
         # 해시 생성
@@ -185,24 +242,20 @@ class JwtTokenServiceImpl(TokenService):
         # Redis에 저장(TTL = 7일)
         await redis_container.refresh.set(key, refresh_token_hash, ex=60*60*24*7)
         
-        # TODO
-        is_save_token_history = True
-        
-        if is_save_token_history:
-            await self.refresh_token_log_repo.insert(
-                RefreshTokenLogDTO(
-                    user_id = user_id
-                    , refresh_token_hash = refresh_token_hash
-                    , refresh_token_jti = refresh_payload['jti']
-                    , access_token_hash = replace_hash_string(access_token)
-                    , access_token_jti = access_payload['jti']
-                    , issued_at = datetime.fromtimestamp(refresh_payload["iat"]).isoformat()
-                    , expires_at=datetime.fromtimestamp(refresh_payload["exp"]).isoformat()
-                    , ip=request.client.host if request else None
-                    , user_agent=request.headers.get("user-agent") if request else None
-                    , issued_type=issued_type
-                )
-            ) 
+        await self.token_document_repository.insert(
+            RefreshTokenLogDTO(
+                user_id = user_id
+                , refresh_token_hash = refresh_token_hash
+                , refresh_token_jti = refresh_payload['jti']
+                , access_token_hash = replace_hash_string(access_token)
+                , access_token_jti = access_payload['jti']
+                , issued_at = datetime.fromtimestamp(refresh_payload["iat"]).isoformat()
+                , expires_at=datetime.fromtimestamp(refresh_payload["exp"]).isoformat()
+                , ip=request.client.host if request else None
+                , user_agent=request.headers.get("user-agent") if request else None
+                , issued_type=issued_type
+            )
+        ) 
         
         # Save Cookie
         self.saveCookie('access', access_token, response)
@@ -210,6 +263,7 @@ class JwtTokenServiceImpl(TokenService):
         
     
     async def revoke_user_refresh_tokens(self, user_id: str):
+        """사용자 기준 - 기존 refresh token 폐기(로그아웃 생략 대비)"""
         pattern = f"refresh:{user_id}:*"
         cursor = 0
         keys_to_delete = []
@@ -225,24 +279,17 @@ class JwtTokenServiceImpl(TokenService):
         if keys_to_delete:
             await redis_container.refresh.delete(*keys_to_delete)
         
-        await self.refresh_token_log_repo.revoke(revoke_reason="login", user_id = user_id)
+        await self.token_document_repository.revoke(revoke_reason="login", user_id = user_id)
         
     
     async def revoke_refresh_token(self, refresh_token : str):
-        SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')
-        TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
+        """refresh token 폐기"""
         
         try :
-            if not SECRET_KEY:
-                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
-            
-            if not TOKEN_ALGORITHM:
-                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
-            
             refresh_token_hash = replace_hash_string(refresh_token)
             
-            payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
-
+            payload = self.jwt_payload_decode(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY', ''))
+        
             key = f"refresh:{payload['user_id']}:{payload['jti']}"
             
             stored_hash = await redis_container.refresh.get(key)
@@ -258,28 +305,20 @@ class JwtTokenServiceImpl(TokenService):
             
             user_id = payload.get("user_id")
             
-            await self.refresh_token_log_repo.revoke(revoke_reason = "logout", user_id=user_id, refresh_token_hash = refresh_token_hash, refresh_token_jti = payload['jti'])
+            await self.token_document_repository.revoke(revoke_reason = "logout", user_id=user_id, refresh_token_hash = refresh_token_hash, refresh_token_jti = payload['jti'])
             
         except Exception as e:
             print(e)
     
     
+    
     async def reissue_refresh_token(self, refresh_token : str, request : Request, response : Response) :
-        
-        SECRET_KEY = os.getenv('REFRESH_TOKEN_SECRET_KEY', '')
-        TOKEN_ALGORITHM = os.getenv('TOKEN_ALGORITHM', '') 
-        
+        """refresh token 재발급"""
         try :
-            if not SECRET_KEY:
-                raise Exception("SECRET_KEY가 설정되지 않았습니다.")
-            
-            if not TOKEN_ALGORITHM:
-                raise Exception("토큰 알고리즘이 설정되지 않았습니다.")
-            
             refresh_token_hash : str = replace_hash_string(refresh_token)
             
-            payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[TOKEN_ALGORITHM])
-
+            payload = self.jwt_payload_decode(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY', ''))
+            
             key = f"refresh:{payload['user_id']}:{payload['jti']}"
             
             stored_hash = await redis_container.refresh.get(key)
@@ -295,14 +334,15 @@ class JwtTokenServiceImpl(TokenService):
             
             user_id = payload.get("user_id")
             
-            await self.refresh_token_log_repo.revoke(revoke_reason = "refresh", user_id=user_id, refresh_token_hash = refresh_token_hash, refresh_token_jti = payload['jti'])
+            await self.token_document_repository.revoke(revoke_reason = "refresh", user_id=user_id, refresh_token_hash = refresh_token_hash, refresh_token_jti = payload['jti'])
             
             # 토큰 발급(DB, Redis, 쿠키에 저장하는 로직도 있기 때문에 saveToken)
             await self.saveToken(user_id, 'refresh', request, response)
             
         except Exception as e:
             raise e
-        
-    
+        finally :
+            # TODO (expire_at - 현재시각) ttl 설정하여 Refresh 토큰을 블랙리스트에 등록
+            logger.info("블랙리스트에 등록 완료")
     
     

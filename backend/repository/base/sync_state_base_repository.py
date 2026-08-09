@@ -5,11 +5,13 @@ from model import SyncState
 
 from datetime import datetime
 
-class SyncStateBaseRepository:
+from repository.base.base_repository import BaseRepository
+
+class SyncStateBaseRepository(BaseRepository):
     
     def __init__(self, db_session : AsyncSession):
-        self.db_session = db_session
-    
+        super().__init__(db_session)
+
     async def select_sync_state_one(self) -> Optional[SyncState]:
         """Sync 상태를 조회"""
         stmt = select(SyncState).where(SyncState.syncKey == "notion_sync")

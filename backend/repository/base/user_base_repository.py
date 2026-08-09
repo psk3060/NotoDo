@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from model import UserInfo
 
-class UserBaseRepository : 
+from repository.base.base_repository import BaseRepository
+
+class UserBaseRepository(BaseRepository):
     def __init__(self, session : AsyncSession):
-        self.session = session
+        super().__init__(session)
         
     async def find_by_id(self, user_id : str) -> UserInfo | None : 
         result = await self.session.execute(

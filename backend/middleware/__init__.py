@@ -1,3 +1,3 @@
-from .jwt_middleware import JWTMiddleware
+from .authorization_middleware import AuthorizationMiddleware
 
-__all__ = ['JWTMiddleware']
+__all__ = ['AuthorizationMiddleware']

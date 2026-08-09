@@ -5,7 +5,7 @@ import jwt, json
 from utils.token_utils import decodeAccessToken
 
 
-class JWTMiddleware(BaseHTTPMiddleware):
+class AuthorizationMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         
         force_logout = False

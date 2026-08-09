@@ -64,6 +64,12 @@ async def _init_redis():
     redis_container.ip = redis.Redis(
         host="localhost", port=6379, db=1, decode_responses=True
     )
+    
+    # token 관리용 redis 컨테이너(db = 4)
+    redis_container.token = redis.Redis(
+        host="localhost", port=6379, db=4, decode_responses=True
+    )
+    
     logger.info("Redis 연결 완료")
 
 
@@ -126,6 +132,9 @@ async def _close_redis():
             await redis_container.refresh.close()
         if redis_container.ip:
             await redis_container.ip.close()
+        if redis_container.token:
+            await redis_container.token.close()
+            
         logger.info("Redis 연결 해제")
     except Exception:
         logger.exception("Redis 해제 중 오류")

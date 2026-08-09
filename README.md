@@ -175,6 +175,8 @@
 - Notion 연동 : 댓글 작성 시 파일 업로드
 - Notion 연동 : 통계 대시보드
 - Notion 연동 : 오프라인 모드
+- 보안 : Token 블랙리스트, 블랙리스트 기반 제어
+
 
 ### ⏸️ On Hold (중단 항목)
 - **Notion OAuth2 인증**

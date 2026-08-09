@@ -4,13 +4,15 @@ from sqlalchemy import func, select, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from model import FrequentlySearchedConditions
 
-from typing import List
+from repository.base.base_repository import BaseRepository
 
 logger = logging.getLogger(__name__)
-class ConditionBaseRepository:
+class ConditionBaseRepository(BaseRepository):
     
     def __init__(self, session : AsyncSession):
-        self.session = session
+        super().__init__(session)
+    
+    
     
     async def count(self, hash_data : str) -> int:
         '''한 건만 등록하기 위한 Count'''
