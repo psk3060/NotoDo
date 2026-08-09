@@ -1,4 +1,4 @@
-import logging
+import logging, os
 
 from core.rsa_mamanger import rsa_manager
 
@@ -13,17 +13,18 @@ from model import LoginRequest, LoginResponse
 
 from utils.security_utils import verify_password
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 logger = logging.getLogger(__name__)
 
 class AuthService(ABC):
     '''SocialAuthServiceImpl도 추가 가능'''
     @abstractmethod
-    def login(loginRequest : LoginRequest, request: Request, response: Response) -> LoginResponse:
-        pass
-    
+    async def login(loginRequest : LoginRequest, request: Request, response: Response) -> LoginResponse: ...
     @abstractmethod
-    def logout(request : Request, response : Response):
-        pass
+    async def logout(request : Request, response : Response): ...
     
 
 class TokenAuthServiceImpl(AuthService):
@@ -33,7 +34,7 @@ class TokenAuthServiceImpl(AuthService):
         self.token_service = token_service
         self.user_service = user_service
         self.ip_service = ip_service
-    
+        
     
     async def login(self, loginRequest : LoginRequest, request: Request, response: Response) -> LoginResponse:
         '''Login 처리 메소드
@@ -109,12 +110,25 @@ class TokenAuthServiceImpl(AuthService):
         
     
     async def logout(self, request, response) -> None:
+        
+        access_token = request.cookies.get("access_token")
         refresh_token = request.cookies.get("refresh_token")
 
         try :
-            # Refresh Token 있을 경우
+            
+            # 1. refresh token 있을 경우 
             if refresh_token:
+                # black list 등록 : refresh_token
+                await self.token_service.regist_black(refresh_token, os.getenv('REFRESH_TOKEN_SECRET_KEY'))
+                
+                # refresh_token 폐기 - revoke
                 await self.token_service.revoke_refresh_token(refresh_token)
+            
+            # 2. access token 있을 경우
+            if access_token : 
+                # black list 등록 : access_token
+                await self.token_service.regist_black(access_token, os.getenv('ACCESS_TOKEN_SECRET_KEY'))
+
         except Exception as e:
             logger.error(f"refresh token revoke 실패: {e}")
         finally:
@@ -122,8 +136,7 @@ class TokenAuthServiceImpl(AuthService):
             self.deleteCookie(response)
 
 
-
-
+    
 
     def deleteCookie(self, response: Response) :
         '''Token 삭제
